@@ -19,6 +19,9 @@ app = dash.Dash(
     suppress_callback_exceptions=True
 )
 
+# Expose the server for Gunicorn
+server = app.server
+
 # Global variables to hold the current model and its algorithm type
 current_model = None
 current_algorithm = None
