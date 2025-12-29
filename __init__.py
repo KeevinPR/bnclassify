@@ -33,14 +33,36 @@ def tan_cl(class_var, df, score='aic', root=None):
     model = robjects.r['tan_cl'](class_var, r_df, **kwargs)
     return model
 
-def tan_hc(class_var, df, score='aic', epsilon=0.01):
+def tan_hc(class_var, df, k=5, epsilon=0.01, smooth=0):
+    """
+    Hill-climbing tree augmented naive Bayes (TAN-HC).
+    Uses cross-validated accuracy to guide the search.
+    
+    Args:
+        class_var: Name of the class variable
+        df: Dataset
+        k: Number of folds for cross-validation (default=5)
+        epsilon: Minimum improvement threshold (default=0.01)
+        smooth: Smoothing parameter for Bayesian estimation (default=0)
+    """
     r_df = _pd_to_r(df)
-    model = robjects.r['tan_hc'](class_var, r_df, score=score, epsilon=epsilon)
+    model = robjects.r['tan_hc'](class_var, r_df, k=k, epsilon=epsilon, smooth=smooth)
     return model
 
-def kdb(class_var, df, k=2):
+def kdb(class_var, df, k=5, kdbk=2, epsilon=0.01, smooth=0):
+    """
+    k-Dependence Bayesian Classifier.
+    
+    Args:
+        class_var: Name of the class variable
+        df: Dataset
+        k: Number of folds for cross-validation (default=5)
+        kdbk: Maximum number of feature parents per feature (default=2)
+        epsilon: Minimum improvement threshold (default=0.01)
+        smooth: Smoothing parameter for Bayesian estimation (default=0)
+    """
     r_df = _pd_to_r(df)
-    model = robjects.r['kdb'](class_var, r_df, k=k)
+    model = robjects.r['kdb'](class_var, r_df, k=k, kdbk=kdbk, epsilon=epsilon, smooth=smooth)
     return model
 
 def aode(class_var, df):

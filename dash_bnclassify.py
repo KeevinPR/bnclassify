@@ -60,8 +60,7 @@ sidebar = html.Div(
         dbc.Nav(
             [
                 dbc.NavLink([html.I(className="fas fa-database me-2"), "Data & Connect"], href="#", id="nav-data", active=True),
-                dbc.NavLink([html.I(className="fas fa-project-diagram me-2"), "Structure Learning"], href="#", id="nav-structure"),
-                dbc.NavLink([html.I(className="fas fa-sliders-h me-2"), "Parameter Learning"], href="#", id="nav-params"),
+                dbc.NavLink([html.I(className="fas fa-cogs me-2"), "Structure & Parameters"], href="#", id="nav-structure"),
                 dbc.NavLink([html.I(className="fas fa-check-circle me-2"), "Evaluation"], href="#", id="nav-eval"),
                 dbc.NavLink([html.I(className="fas fa-magic me-2"), "Prediction"], href="#", id="nav-predict"),
                 dbc.NavLink([html.I(className="fas fa-search me-2"), "Inspect Model"], href="#", id="nav-inspect"),
@@ -127,17 +126,19 @@ data_section = html.Div(id="section-data", children=[
     html.Div(id='data-preview')
 ])
 
-# --- 2. STRUCTURE LEARNING SECTION ---
+# --- 2. COMBINED STRUCTURE & PARAMETER LEARNING SECTION ---
 structure_section = html.Div(id="section-structure", style={"display": "none"}, children=[
-    html.H2("Structure Learning"),
-    html.P("Learn the network structure from data. Select one algorithm at a time and click 'Train Structure'."),
+    html.H2("Structure & Parameter Learning"),
+    html.P("Configure both structure and parameters for your Bayesian Network Classifier. Both are interconnected and can be trained together."),
     dbc.Alert([
         html.I(className="fas fa-lightbulb me-2"),
-        html.Strong("Tip: "),
-        "Each algorithm learns a different type of network structure. You can train different algorithms one at a time to compare them. Only the most recent structure will be used for parameter learning."
+        html.Strong("Scientific Note: "),
+        "Structure and parameter learning are coexistent processes. The structure defines the dependencies, while parameters quantify them. Configure both aspects below."
     ], color="info", className="small"),
     html.Hr(),
     
+    # === STRUCTURE LEARNING SECTION ===
+    html.H4([html.I(className="fas fa-project-diagram me-2"), "Structure Learning"]),
     dbc.Row([
         dbc.Col([
             html.Div([
@@ -167,15 +168,15 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
     ]),
     html.Br(),
     
-    # Dynamic Parameters Card
+    # Structure Algorithm Parameters Card
     dbc.Card([
-        dbc.CardHeader("Algorithm Parameters"),
+        dbc.CardHeader("Structure Algorithm Parameters"),
         dbc.CardBody([
-            # TAN - Score
+            # TAN_CL - Score & Root (first row)
             dbc.Row([
                 dbc.Col([
                     dbc.Label(["Score Metric", help_icon("tt-score")], id="lbl-score"),
-                    dbc.Tooltip("AIC/BIC include penalties for complexity. Log-Likelihood (LL) is raw fit.", target="tt-score"),
+                    dbc.Tooltip("AIC/BIC include penalties for complexity. Log-Likelihood (LL) is raw fit. Only for TAN (Chow-Liu).", target="tt-score"),
                     dcc.Dropdown(
                         id='score-dropdown',
                         options=[
@@ -187,47 +188,44 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
                     )
                 ], width=4, id="field-score", style={"display": "none"}),
                 
-                # TAN - Root
+                # TAN_CL - Root
                 dbc.Col([
                     dbc.Label(["Root Node", help_icon("tt-root")], id="lbl-root"),
-                    dbc.Tooltip("Root for the Tree-Augmented structure. Auto-selected if blank.", target="tt-root"),
+                    dbc.Tooltip("Root for the Tree-Augmented structure. Auto-selected if blank. Only for TAN (Chow-Liu).", target="tt-root"),
                     dcc.Dropdown(id='root-dropdown', placeholder="Auto", clearable=True)
                 ], width=4, id="field-root", style={"display": "none"}),
             ]),
             
-            # Epsilon & K & Folds
+            # Wrapper Algorithms - CV Folds & Epsilon (second row)
             dbc.Row([
                 dbc.Col([
+                   dbc.Label(["CV Folds", help_icon("tt-folds")], id="lbl-folds"),
+                   dbc.Tooltip("Number of folds for internal cross-validation in wrapper algorithms (TAN-HC, FSSJ, BSEJ, KDB).", target="tt-folds"),
+                   dbc.Input(id='struct-folds-input', type='number', value=5, min=2, step=1)
+                ], width=4, id="field-folds", style={"display": "none"}),
+                
+                dbc.Col([
                     dbc.Label(["Epsilon", help_icon("tt-eps")], id="lbl-eps"),
-                    dbc.Tooltip("Min improvement threshold for Greedy Search (Hill Climbing).", target="tt-eps"),
-                    dbc.Input(id='epsilon-input', type='number', value=0.01, step=0.001)
+                    dbc.Tooltip("Min improvement threshold for Greedy Search. Used in TAN-HC, FSSJ, BSEJ, and KDB.", target="tt-eps"),
+                    dbc.Input(id='epsilon-input', type='number', value=0.01, step=0.001, min=0)
                 ], width=4, id="field-epsilon", style={"display": "none"}),
                 
+                # KDB - kdbk (Max Parents per Feature)
                 dbc.Col([
-                    dbc.Label(["k (Max Parents)", help_icon("tt-k")], id="lbl-k"),
-                    dbc.Tooltip("Max number of parent nodes per attribute in KDB.", target="tt-k"),
-                    dbc.Input(id='k-input', type='number', value=2, min=1, step=1)
-                ], width=4, id="field-k", style={"display": "none"}),
-                
-                dbc.Col([
-                   dbc.Label(["CV Folds", help_icon("tt-folds")], id="lbl-folds"),
-                   dbc.Tooltip("Number of folds for internal cross-validation in wrapper algorithms.", target="tt-folds"),
-                   dbc.Input(id='struct-folds-input', type='number', value=5, min=2)
-                ], width=4, id="field-folds", style={"display": "none"}),
+                    dbc.Label(["kdbk (Max Parents)", help_icon("tt-kdbk")], id="lbl-kdbk"),
+                    dbc.Tooltip("Maximum number of feature parents per feature in KDB.", target="tt-kdbk"),
+                    dbc.Input(id='kdbk-input', type='number', value=2, min=1, step=1)
+                ], width=4, id="field-kdbk", style={"display": "none"}),
             ], className="mt-2"),
         ])
     ]),
     
     html.Br(),
-    dbc.Button("Train Structure", id="btn-train-structure", color="primary", size="lg")
-])
-
-# --- 3. PARAMETER LEARNING SECTION ---
-params_section = html.Div(id="section-params", style={"display": "none"}, children=[
-    html.H2("Parameter Learning"),
-    html.P("Estimate the parameters (CPTs) for the learned structure. Make sure you've trained a structure first."),
-    html.Div(id="current-params-info", className="alert alert-info"),
     html.Hr(),
+    
+    # === PARAMETER LEARNING SECTION ===
+    html.H4([html.I(className="fas fa-sliders-h me-2"), "Parameter Learning"]),
+    html.Div(id="current-params-info", className="alert alert-info"),
     
     dbc.Row([
         dbc.Col([
@@ -256,31 +254,54 @@ params_section = html.Div(id="section-params", style={"display": "none"}, childr
     ]),
     html.Br(),
     
-    dbc.Card(dbc.CardBody([
-        dbc.Row([
-            dbc.Col([
-                dbc.Label(["Smoothing Alpha", help_icon("tt-alpha")], id="lbl-alpha"),
-                dbc.Tooltip("Laplace smoothing parameter. 0 = MLE.", target="tt-alpha"),
-                dbc.Input(id='alpha-input', type='number', value=0.5, step=0.1)
-            ], width=4, id="field-alpha"),
-            
-            dbc.Col([
-                dbc.Label(["AWNB Trees", help_icon("tt-trees")], id="lbl-trees"),
-                dbc.Tooltip("Number of bootstrap trees to average.", target="tt-trees"),
-                dbc.Input(id='trees-input', type='number', value=10, min=1)
-            ], width=4, id="field-trees", style={"display": "none"}),
-             
-            dbc.Col([
-                dbc.Label(["MANB Prior", help_icon("tt-prior")], id="lbl-prior"),
-                dbc.Tooltip("Prior probability for Model Averaging.", target="tt-prior"),
-                dbc.Input(id='prior-input', type='number', value=0.5, step=0.1)
-            ], width=4, id="field-prior", style={"display": "none"}),
+    dbc.Card([
+        dbc.CardHeader("Parameter Estimation Options"),
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label(["Smoothing Alpha", help_icon("tt-alpha")], id="lbl-alpha"),
+                    dbc.Tooltip("Laplace smoothing parameter. 0 = MLE.", target="tt-alpha"),
+                    dbc.Input(id='alpha-input', type='number', value=0.5, step=0.1)
+                ], width=4, id="field-alpha"),
+                
+                dbc.Col([
+                    dbc.Label(["AWNB Trees", help_icon("tt-trees")], id="lbl-trees"),
+                    dbc.Tooltip("Number of bootstrap trees to average.", target="tt-trees"),
+                    dbc.Input(id='trees-input', type='number', value=10, min=1)
+                ], width=4, id="field-trees", style={"display": "none"}),
+                 
+                dbc.Col([
+                    dbc.Label(["MANB Prior", help_icon("tt-prior")], id="lbl-prior"),
+                    dbc.Tooltip("Prior probability for Model Averaging.", target="tt-prior"),
+                    dbc.Input(id='prior-input', type='number', value=0.5, step=0.1)
+                ], width=4, id="field-prior", style={"display": "none"}),
+            ])
         ])
-    ])),
+    ]),
     
     html.Br(),
-    dbc.Button("Learn Parameters", id="btn-learn-params", color="primary", size="lg")
+    html.Hr(),
+    
+    # === TRAINING BUTTONS ===
+    html.H5("Training Options"),
+    html.Div(id="training-restrictions-alert"),  # Dynamic alert for restrictions
+    html.Br(),
+    dbc.Row([
+        dbc.Col([
+            dbc.Button([html.I(className="fas fa-play-circle me-2"), "Train Both (Structure + Parameters)"], 
+                       id="btn-train-both", color="success", size="lg", className="w-100", disabled=False)
+        ], width=6),
+        dbc.Col([
+            dbc.ButtonGroup([
+                dbc.Button("Structure Only", id="btn-train-structure", color="primary", outline=True, disabled=False),
+                dbc.Button("Parameters Only", id="btn-learn-params", color="primary", outline=True, disabled=True)
+            ], className="w-100")
+        ], width=6)
+    ])
 ])
+
+# --- 3. PARAMS SECTION (REMOVED - NOW COMBINED ABOVE) ---
+params_section = html.Div(id="section-params", style={"display": "none"}, children=[])
 
 # --- 4. EVALUATION SECTION ---
 eval_section = html.Div(id="section-eval", style={"display": "none"}, children=[
@@ -491,18 +512,16 @@ app.layout = html.Div([
      Output("section-inspect", "style"),
      Output("nav-data", "active"),
      Output("nav-structure", "active"),
-     Output("nav-params", "active"),
      Output("nav-eval", "active"),
      Output("nav-predict", "active"),
      Output("nav-inspect", "active")],
     [Input("nav-data", "n_clicks"),
      Input("nav-structure", "n_clicks"),
-     Input("nav-params", "n_clicks"),
      Input("nav-eval", "n_clicks"),
      Input("nav-predict", "n_clicks"),
      Input("nav-inspect", "n_clicks")],
 )
-def navigate(n_data, n_struc, n_param, n_eval, n_pred, n_insp):
+def navigate(n_data, n_struc, n_eval, n_pred, n_insp):
     ctx = callback_context
     button_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else 'nav-data'
     
@@ -510,20 +529,18 @@ def navigate(n_data, n_struc, n_param, n_eval, n_pred, n_insp):
     hide = {"display": "none"}
     show = {"display": "block"}
     
-    # Defaults
+    # Defaults - section-params is now always hidden as it's integrated into section-structure
     styles = [hide] * 6
-    actives = [False] * 6
+    actives = [False] * 5  # Only 5 nav items now
     
     if button_id == "nav-structure":
         styles[1] = show; actives[1] = True
-    elif button_id == "nav-params":
-        styles[2] = show; actives[2] = True
     elif button_id == "nav-eval":
-        styles[3] = show; actives[3] = True
+        styles[3] = show; actives[2] = True
     elif button_id == "nav-predict":
-        styles[4] = show; actives[4] = True
+        styles[4] = show; actives[3] = True
     elif button_id == "nav-inspect":
-        styles[5] = show; actives[5] = True
+        styles[5] = show; actives[4] = True
     else: # Default or nav-data
         styles[0] = show; actives[0] = True
         
@@ -585,7 +602,7 @@ def load_and_preview_data(upload_contents, use_default, upload_filename):
 # 3. Dynamic Parameter Visibility (Structure & Params)
 @app.callback(
     [Output("field-score", "style"), Output("field-root", "style"), 
-     Output("field-epsilon", "style"), Output("field-k", "style"), Output("field-folds", "style")],
+     Output("field-folds", "style"), Output("field-epsilon", "style"), Output("field-kdbk", "style")],
     Input("structure-method", "value")
 )
 def update_structure_fields(method):
@@ -593,18 +610,25 @@ def update_structure_fields(method):
     show = {"display": "block"}
     
     # Defaults
-    s_score = hide; s_root = hide; s_eps = hide; s_k = hide; s_folds = hide
+    s_score = hide; s_root = hide; s_folds = hide; s_eps = hide; s_kdbk = hide
     
-    if method in ['TAN_CL']:
+    # TAN_CL: Only uses score and root (non-wrapper algorithm)
+    if method == 'TAN_CL':
         s_score = show; s_root = show
-    if method in ['TAN_HC']:
-        s_score = show; s_eps = show
-    if method in ['KDB']:
-        s_k = show
-    if method in ['FSSJ', 'BSEJ']:
+    
+    # TAN_HC: Wrapper algorithm using CV folds and epsilon
+    elif method == 'TAN_HC':
+        s_folds = show; s_eps = show
+    
+    # KDB: Wrapper algorithm using CV folds, epsilon, and kdbk (max parents)
+    elif method == 'KDB':
+        s_folds = show; s_eps = show; s_kdbk = show
+    
+    # FSSJ, BSEJ: Wrapper algorithms using CV folds and epsilon
+    elif method in ['FSSJ', 'BSEJ']:
         s_folds = show; s_eps = show
         
-    return s_score, s_root, s_eps, s_k, s_folds
+    return s_score, s_root, s_folds, s_eps, s_kdbk
 
 @app.callback(
     [Output("field-alpha", "style"), Output("field-trees", "style"), Output("field-prior", "style")],
@@ -634,13 +658,14 @@ def update_eval_fields(val):
     Output('output-area', 'children'),
     [Input('btn-train-structure', 'n_clicks'),
      Input('btn-learn-params', 'n_clicks'),
+     Input('btn-train-both', 'n_clicks'),
      Input('btn-evaluate', 'n_clicks'),
      Input('btn-predict', 'n_clicks')],
     [State('dataset-store', 'data'),
      State('class-dropdown', 'value'),
      # Structure params
      State('structure-method', 'value'), State('score-dropdown', 'value'), State('root-dropdown', 'value'),
-     State('epsilon-input', 'value'), State('k-input', 'value'), State('struct-folds-input', 'value'),
+     State('epsilon-input', 'value'), State('kdbk-input', 'value'), State('struct-folds-input', 'value'),
      # Param params
      State('param-method', 'value'), State('alpha-input', 'value'), State('trees-input', 'value'), State('prior-input', 'value'),
      # Eval params
@@ -648,9 +673,9 @@ def update_eval_fields(val):
      # Predict params
      State('upload-predict', 'contents'), State('prob-check', 'value')]
 )
-def execute_action(n_struc, n_param, n_eval, n_pred, 
+def execute_action(n_struc, n_param, n_both, n_eval, n_pred, 
                   df_json, class_var,
-                  struct_method, score, root, eps, k, s_folds,
+                  struct_method, score, root, eps, kdbk, s_folds,
                   param_method, alpha, trees, prior,
                   eval_metric, eval_folds, dag_check,
                   pred_contents, prob_check):
@@ -664,6 +689,115 @@ def execute_action(n_struc, n_param, n_eval, n_pred,
     global current_model, current_structure_algorithm, current_params_learned
     df = pd.read_json(df_json, orient='split')
     
+    # --- TRAIN BOTH (STRUCTURE + PARAMETERS) ---
+    if trigger == 'btn-train-both':
+        # PRE-VALIDATION: Check MANB compatibility before starting
+        if param_method == 'MANB' and struct_method != 'NB':
+            return dbc.Alert([
+                html.I(className="fas fa-ban me-2"),
+                html.Strong("Cannot Train - Incompatible Configuration: "),
+                f"MANB parameters require Naive Bayes structure, but you selected '{struct_method}'. ",
+                html.Br(),
+                "Please either:",
+                html.Ul([
+                    html.Li("Change structure algorithm to 'Naive Bayes (NB)', or"),
+                    html.Li("Change parameter method to MLE, Bayes, WANBIA, or AWNB")
+                ])
+            ], color="danger")
+        
+        try:
+            # First: Train Structure
+            if   struct_method == 'NB':      
+                model = bnclassify.nb(class_var, df)
+            elif struct_method == 'TAN_CL':  
+                model = bnclassify.tan_cl(class_var, df, score=score.lower(), root=root)
+            elif struct_method == 'TAN_HC':  
+                model = bnclassify.tan_hc(class_var, df, k=s_folds, epsilon=eps, smooth=0)
+            elif struct_method == 'KDB':     
+                model = bnclassify.kdb(class_var, df, k=s_folds, kdbk=kdbk, epsilon=eps, smooth=0)
+            elif struct_method == 'AODE':    
+                model = bnclassify.aode(class_var, df)
+            elif struct_method == 'FSSJ':    
+                model = bnclassify.fssj(class_var, df, k=s_folds, epsilon=eps, smooth=0)
+            elif struct_method == 'BSEJ':    
+                model = bnclassify.bsej(class_var, df, k=s_folds, epsilon=eps, smooth=0)
+            else: 
+                return dbc.Alert("Unknown Algorithm", color="danger")
+            
+            current_model = model
+            current_structure_algorithm = struct_method
+            
+            # Second: Learn Parameters
+            if   param_method == 'MLE':    
+                current_model = bnclassify.lp(current_model, df, smooth=0)
+            elif param_method == 'Bayes':  
+                current_model = bnclassify.lp(current_model, df, smooth=alpha)
+            elif param_method == 'WANBIA': 
+                current_model = bnclassify.lp(current_model, df, wanbia=True)
+            elif param_method == 'AWNB':   
+                current_model = bnclassify.lp(current_model, df, awnb_trees=trees)
+            elif param_method == 'MANB':   
+                current_model = bnclassify.lp(current_model, df, manb_prior=prior)
+            
+            current_params_learned = True
+            
+            # Algorithm and parameter descriptions
+            algo_info = {
+                'NB': 'Naive Bayes - simplest structure with class as only parent',
+                'TAN_CL': 'Tree-Augmented Network (Chow-Liu) - tree structure between features',
+                'TAN_HC': f'Tree-Augmented Network (Hill-Climbing) - optimized using {s_folds}-fold CV',
+                'AODE': 'Averaged One-Dependence Estimator - ensemble of structures',
+                'KDB': f'k-Dependence Bayesian Classifier - features can have up to {kdbk} parents (using {s_folds}-fold CV)',
+                'FSSJ': f'Forward Sequential Selection Join - greedy forward search ({s_folds}-fold CV)',
+                'BSEJ': f'Backward Sequential Elimination Join - greedy backward search ({s_folds}-fold CV)'
+            }
+            
+            param_info = {
+                'MLE': 'Maximum Likelihood Estimation - raw frequency counts',
+                'Bayes': f'Bayesian estimation with Dirichlet prior (alpha={alpha})',
+                'WANBIA': 'Weighted Averaged Naive Bayes with Instances - feature weighting',
+                'AWNB': f'Attribute Weighted Naive Bayes - bootstrap ensemble ({trees} trees)',
+                'MANB': f'Model Averaged Naive Bayes - prior={prior}'
+            }
+            
+            struct_desc = algo_info.get(struct_method, struct_method)
+            param_desc = param_info.get(param_method, param_method)
+            
+            # Add compatibility note if needed
+            extra_note = None
+            if param_method in ['WANBIA', 'AWNB'] and current_structure_algorithm != 'NB':
+                extra_note = html.Small([
+                    html.I(className="fas fa-info-circle text-info me-1"),
+                    f"Note: {param_method} is designed for Naive Bayes but has been applied to {struct_method}. Results may vary."
+                ], className="text-muted d-block mt-2")
+            
+            return html.Div([
+                dbc.Alert([
+                    html.H4([html.I(className="fas fa-check-double me-2"), "Complete Model Trained Successfully!"], className="alert-heading mb-3"),
+                    
+                    html.Div([
+                        html.H6([html.I(className="fas fa-project-diagram me-2"), "Structure"], className="mb-2"),
+                        html.P([html.Strong(struct_method), " - ", struct_desc], className="mb-3 ms-3"),
+                        
+                        html.H6([html.I(className="fas fa-sliders-h me-2"), "Parameters"], className="mb-2"),
+                        html.P([html.Strong(param_method), " - ", param_desc], className="mb-2 ms-3"),
+                        extra_note if extra_note else "",
+                    ]),
+                    
+                    html.Hr(),
+                    html.P([
+                        html.Strong("Next steps: "),
+                        "Model is fully trained and ready! Go to 'Evaluation' to assess performance, 'Prediction' to classify new data, or 'Inspect Model' to examine the learned network."
+                    ], className="mb-0 small")
+                ], color="success")
+            ])
+            
+        except Exception as e:
+            return dbc.Alert([
+                html.H5([html.I(className="fas fa-times-circle me-2"), "Training Failed"], className="alert-heading"),
+                html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
+            ], color="danger")
+    
     # --- TRAIN STRUCTURE ---
     if trigger == 'btn-train-structure':
         try:
@@ -672,9 +806,9 @@ def execute_action(n_struc, n_param, n_eval, n_pred,
             elif struct_method == 'TAN_CL':  
                 model = bnclassify.tan_cl(class_var, df, score=score.lower(), root=root)
             elif struct_method == 'TAN_HC':  
-                model = bnclassify.tan_hc(class_var, df, score=score.lower(), epsilon=eps)
+                model = bnclassify.tan_hc(class_var, df, k=s_folds, epsilon=eps, smooth=0)
             elif struct_method == 'KDB':     
-                model = bnclassify.kdb(class_var, df, k=k)
+                model = bnclassify.kdb(class_var, df, k=s_folds, kdbk=kdbk, epsilon=eps, smooth=0)
             elif struct_method == 'AODE':    
                 model = bnclassify.aode(class_var, df)
             elif struct_method == 'FSSJ':    
@@ -692,11 +826,11 @@ def execute_action(n_struc, n_param, n_eval, n_pred,
             algo_info = {
                 'NB': 'Naive Bayes - simplest structure with class as only parent',
                 'TAN_CL': 'Tree-Augmented Network (Chow-Liu) - tree structure between features',
-                'TAN_HC': 'Tree-Augmented Network (Hill-Climbing) - optimized tree structure',
+                'TAN_HC': f'Tree-Augmented Network (Hill-Climbing) - optimized using {s_folds}-fold CV',
                 'AODE': 'Averaged One-Dependence Estimator - ensemble of structures',
-                'KDB': f'k-Dependence Bayesian Classifier - features can have up to {k} parents',
-                'FSSJ': 'Forward Sequential Selection Join - greedy forward search',
-                'BSEJ': 'Backward Sequential Elimination Join - greedy backward search'
+                'KDB': f'k-Dependence Bayesian Classifier - features can have up to {kdbk} parents (using {s_folds}-fold CV)',
+                'FSSJ': f'Forward Sequential Selection Join - greedy forward search ({s_folds}-fold CV)',
+                'BSEJ': f'Backward Sequential Elimination Join - greedy backward search ({s_folds}-fold CV)'
             }
             
             description = algo_info.get(struct_method, struct_method)
@@ -914,13 +1048,13 @@ def update_params_info(n):
     if current_structure_algorithm is None:
         return html.Div([
             html.I(className="fas fa-info-circle me-2"),
-            "No structure learned yet. Please go to Structure Learning first."
+            "No structure learned yet. Please train a structure first."
         ])
     
     if current_model is None:
         return html.Div([
             html.I(className="fas fa-info-circle me-2"),
-            "No structure learned yet. Please go to Structure Learning first."
+            "No structure learned yet. Please train a structure first."
         ])
     
     # Use the tracking flag instead of heuristic
@@ -943,6 +1077,55 @@ def update_params_info(n):
         html.Span(f" | {params_status}", className="ms-2"),
         *compatibility_notes
     ])
+
+# 6b. TRAINING BUTTONS STATE & RESTRICTIONS CALLBACK
+@app.callback(
+    [Output('btn-learn-params', 'disabled'),
+     Output('btn-train-both', 'disabled'),
+     Output('training-restrictions-alert', 'children')],
+    [Input('interval-component', 'n_intervals'),
+     Input('param-method', 'value'),
+     Input('structure-method', 'value')]
+)
+def update_training_restrictions(n, param_method, struct_method):
+    global current_model, current_structure_algorithm, current_params_learned
+    
+    # Check if structure exists
+    has_structure = (current_model is not None and current_structure_algorithm is not None)
+    
+    # Default: Parameters Only disabled if no structure
+    params_only_disabled = not has_structure
+    train_both_disabled = False
+    alert = None
+    
+    # If structure exists, check MANB compatibility for "Parameters Only"
+    if has_structure and param_method == 'MANB' and current_structure_algorithm != 'NB':
+        params_only_disabled = True
+        alert = dbc.Alert([
+            html.I(className="fas fa-exclamation-triangle me-2"),
+            html.Strong("Restriction: "),
+            f"MANB parameters cannot be applied to current structure ({current_structure_algorithm}). ",
+            "Select a different parameter method or retrain with Naive Bayes structure."
+        ], color="warning", className="mt-2")
+    
+    # Check MANB compatibility for "Train Both"
+    elif param_method == 'MANB' and struct_method != 'NB':
+        train_both_disabled = True
+        alert = dbc.Alert([
+            html.I(className="fas fa-exclamation-triangle me-2"),
+            html.Strong("Incompatible Selection: "),
+            f"MANB parameters require Naive Bayes structure. Currently selected: {struct_method}. ",
+            "Either change structure to 'Naive Bayes (NB)' or select a different parameter method."
+        ], color="danger", className="mt-2")
+    
+    # If no structure, show info message
+    elif not has_structure:
+        alert = dbc.Alert([
+            html.I(className="fas fa-info-circle me-2"),
+            "No structure trained yet. Use 'Train Both' or 'Structure Only' to begin."
+        ], color="info", className="mt-2")
+    
+    return params_only_disabled, train_both_disabled, alert
 
 # 7. RESET CALLBACK
 @app.callback(
