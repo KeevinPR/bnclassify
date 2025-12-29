@@ -931,14 +931,32 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             if eval_metric == 'CV':
                 fixed = ('fixed' in dag_check)
                 acc = bnclassify.cv(current_model, df, k=eval_folds, dag=fixed)
-                val = acc['accuracy'] if isinstance(acc, dict) else acc
-                return dbc.Alert(f"Cross-Validation Accuracy: {float(val):.4f}", color="info")
+                # Extract value from R object (could be FloatVector or dict)
+                if isinstance(acc, dict):
+                    val = acc['accuracy']
+                else:
+                    val = acc
+                # Convert R FloatVector to Python float by accessing first element
+                try:
+                    val = float(val[0]) if hasattr(val, '__getitem__') else float(val)
+                except (TypeError, IndexError):
+                    val = float(val)
+                return dbc.Alert(f"Cross-Validation Accuracy ({eval_folds} folds): {val:.4f}", color="info")
+            
             elif eval_metric == 'AIC':
-                return dbc.Alert(f"AIC: {bnclassify.aic(current_model, df)}", color="info")
+                # Wrapper already handles conversion to float
+                aic_val = bnclassify.aic(current_model, df)
+                return dbc.Alert(f"AIC Score: {aic_val:.4f}", color="info")
+            
             elif eval_metric == 'BIC':
-                return dbc.Alert(f"BIC: {bnclassify.bic(current_model, df)}", color="info")
+                # Wrapper already handles conversion to float
+                bic_val = bnclassify.bic(current_model, df)
+                return dbc.Alert(f"BIC Score: {bic_val:.4f}", color="info")
+            
             elif eval_metric == 'LL':
-                return dbc.Alert(f"Log-Likelihood: {bnclassify.log_lik(current_model, df)}", color="info")
+                # Wrapper already handles conversion to float
+                ll_val = bnclassify.log_lik(current_model, df)
+                return dbc.Alert(f"Log-Likelihood: {ll_val:.4f}", color="info")
             
         except Exception as e:
             return dbc.Alert(f"Evaluation Failed: {e}", color="danger")

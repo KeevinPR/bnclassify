@@ -103,15 +103,30 @@ def cv(model, df, k=10, dag=True):
 
 def aic(model, df):
     r_df = _pd_to_r(df)
-    return robjects.r['aic'](model, r_df)[0]
+    result = robjects.r['AIC'](model, r_df)
+    # Extract scalar value from R object
+    try:
+        return float(result[0]) if hasattr(result, '__getitem__') else float(result)
+    except (TypeError, IndexError):
+        return float(result)
 
 def bic(model, df):
     r_df = _pd_to_r(df)
-    return robjects.r['bic'](model, r_df)[0]
+    result = robjects.r['BIC'](model, r_df)
+    # Extract scalar value from R object
+    try:
+        return float(result[0]) if hasattr(result, '__getitem__') else float(result)
+    except (TypeError, IndexError):
+        return float(result)
 
 def log_lik(model, df):
     r_df = _pd_to_r(df)
-    return robjects.r['logLik'](model, r_df)[0]
+    result = robjects.r['logLik'](model, r_df)
+    # Extract scalar value from R object
+    try:
+        return float(result[0]) if hasattr(result, '__getitem__') else float(result)
+    except (TypeError, IndexError):
+        return float(result)
 
 def predict(model, df, prob=False):
     r_df = _pd_to_r(df)
