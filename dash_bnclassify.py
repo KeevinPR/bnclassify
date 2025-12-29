@@ -24,6 +24,8 @@ server = app.server
 # Global variables to hold the current model and its algorithm type
 current_model = None
 current_algorithm = None
+current_structure_algorithm = None  # Track what structure algorithm was used
+current_params_learned = False  # Track whether parameters have been learned
 
 # =============================================================================
 #                                   STYLES
@@ -73,12 +75,9 @@ sidebar = html.Div(
     style=SIDEBAR_STYLE,
 )
 
-# Function to helper create icon with tooltip
-def help_icon(id, text):
-    return html.Span([
-        html.I(className="fas fa-question-circle ms-1 text-info", id=id, style={"cursor": "pointer"}),
-        dbc.Tooltip(text, target=id)
-    ])
+# Function to helper create icon for popover
+def help_icon(id):
+    return html.I(className="fas fa-question-circle ms-1 text-info", id=id, style={"cursor": "pointer"})
 
 # --- 1. DATA SECTION ---
 data_section = html.Div(id="section-data", children=[
@@ -112,7 +111,14 @@ data_section = html.Div(id="section-data", children=[
             html.Div(id='data-status-msg', className="text-success fw-bold"),
             html.Br(),
             
-            html.Label(["Target (Class) Variable", help_icon("tt-class", "The variable you want to predict.")], className="fw-bold"),
+            html.Label(["Target (Class) Variable ", 
+                dbc.Button(
+                    html.I(className="fas fa-question-circle"),
+                    id="help-button-class",
+                    color="link",
+                    style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                ),
+            ], className="fw-bold"),
             dcc.Dropdown(id='class-dropdown', placeholder="Select class column", clearable=False),
         ])
     ),
@@ -124,12 +130,25 @@ data_section = html.Div(id="section-data", children=[
 # --- 2. STRUCTURE LEARNING SECTION ---
 structure_section = html.Div(id="section-structure", style={"display": "none"}, children=[
     html.H2("Structure Learning"),
-    html.P("Learn the network structure from data."),
+    html.P("Learn the network structure from data. Select one algorithm at a time and click 'Train Structure'."),
+    dbc.Alert([
+        html.I(className="fas fa-lightbulb me-2"),
+        html.Strong("Tip: "),
+        "Each algorithm learns a different type of network structure. You can train different algorithms one at a time to compare them. Only the most recent structure will be used for parameter learning."
+    ], color="info", className="small"),
     html.Hr(),
     
     dbc.Row([
         dbc.Col([
-            dbc.Label(["Algorithm Family", help_icon("tt-algo", "Select the structure learning algorithm. NB is simplest. TAN allows one parent. KDB allows k parents.")]),
+            html.Div([
+                dbc.Label("Algorithm Family", style={'display': 'inline-block', 'marginRight': '5px'}),
+                dbc.Button(
+                    html.I(className="fas fa-question-circle"),
+                    id="help-button-algorithms",
+                    color="link",
+                    style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                ),
+            ]),
             dcc.Dropdown(
                 id='structure-method',
                 options=[
@@ -155,7 +174,8 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
             # TAN - Score
             dbc.Row([
                 dbc.Col([
-                    dbc.Label(["Score Metric", help_icon("tt-score", "AIC/BIC include penalties for complexity. Log-Likelihood (LL) is raw fit.")], id="lbl-score"), 
+                    dbc.Label(["Score Metric", help_icon("tt-score")], id="lbl-score"),
+                    dbc.Tooltip("AIC/BIC include penalties for complexity. Log-Likelihood (LL) is raw fit.", target="tt-score"),
                     dcc.Dropdown(
                         id='score-dropdown',
                         options=[
@@ -169,7 +189,8 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
                 
                 # TAN - Root
                 dbc.Col([
-                    dbc.Label(["Root Node", help_icon("tt-root", "Root for the Tree-Augmented structure. Auto-selected if blank.")], id="lbl-root"),
+                    dbc.Label(["Root Node", help_icon("tt-root")], id="lbl-root"),
+                    dbc.Tooltip("Root for the Tree-Augmented structure. Auto-selected if blank.", target="tt-root"),
                     dcc.Dropdown(id='root-dropdown', placeholder="Auto", clearable=True)
                 ], width=4, id="field-root", style={"display": "none"}),
             ]),
@@ -177,17 +198,20 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
             # Epsilon & K & Folds
             dbc.Row([
                 dbc.Col([
-                    dbc.Label(["Epsilon", help_icon("tt-eps", "Min improvement threshold for Greedy Search (Hill Climbing).")], id="lbl-eps"),
+                    dbc.Label(["Epsilon", help_icon("tt-eps")], id="lbl-eps"),
+                    dbc.Tooltip("Min improvement threshold for Greedy Search (Hill Climbing).", target="tt-eps"),
                     dbc.Input(id='epsilon-input', type='number', value=0.01, step=0.001)
                 ], width=4, id="field-epsilon", style={"display": "none"}),
                 
                 dbc.Col([
-                    dbc.Label(["k (Max Parents)", help_icon("tt-k", "Max number of parent nodes per attribute in KDB.")], id="lbl-k"),
+                    dbc.Label(["k (Max Parents)", help_icon("tt-k")], id="lbl-k"),
+                    dbc.Tooltip("Max number of parent nodes per attribute in KDB.", target="tt-k"),
                     dbc.Input(id='k-input', type='number', value=2, min=1, step=1)
                 ], width=4, id="field-k", style={"display": "none"}),
                 
                 dbc.Col([
-                   dbc.Label(["CV Folds", help_icon("tt-folds", "Number of folds for internal cross-validation in wrapper algorithms.")], id="lbl-folds"),
+                   dbc.Label(["CV Folds", help_icon("tt-folds")], id="lbl-folds"),
+                   dbc.Tooltip("Number of folds for internal cross-validation in wrapper algorithms.", target="tt-folds"),
                    dbc.Input(id='struct-folds-input', type='number', value=5, min=2)
                 ], width=4, id="field-folds", style={"display": "none"}),
             ], className="mt-2"),
@@ -201,12 +225,21 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
 # --- 3. PARAMETER LEARNING SECTION ---
 params_section = html.Div(id="section-params", style={"display": "none"}, children=[
     html.H2("Parameter Learning"),
-    html.P("Estimate the parameters (CPTs) for the learned structure."),
+    html.P("Estimate the parameters (CPTs) for the learned structure. Make sure you've trained a structure first."),
+    html.Div(id="current-params-info", className="alert alert-info"),
     html.Hr(),
     
     dbc.Row([
         dbc.Col([
-            dbc.Label(["Method", help_icon("tt-param", "Bayesin uses Dirichlet priors (smoothing). MLE is raw counts.")]),
+            html.Div([
+                dbc.Label("Parameter Learning Method", style={'display': 'inline-block', 'marginRight': '5px'}),
+                dbc.Button(
+                    html.I(className="fas fa-question-circle"),
+                    id="help-button-methods",
+                    color="link",
+                    style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                ),
+            ]),
             dcc.Dropdown(
                 id='param-method',
                 options=[
@@ -226,17 +259,20 @@ params_section = html.Div(id="section-params", style={"display": "none"}, childr
     dbc.Card(dbc.CardBody([
         dbc.Row([
             dbc.Col([
-                dbc.Label(["Smoothing Alpha", help_icon("tt-alpha", "Laplace smoothing parameter. 0 = MLE.")], id="lbl-alpha"),
+                dbc.Label(["Smoothing Alpha", help_icon("tt-alpha")], id="lbl-alpha"),
+                dbc.Tooltip("Laplace smoothing parameter. 0 = MLE.", target="tt-alpha"),
                 dbc.Input(id='alpha-input', type='number', value=0.5, step=0.1)
             ], width=4, id="field-alpha"),
             
             dbc.Col([
-                dbc.Label(["AWNB Trees", help_icon("tt-trees", "Number of bootstrap trees to average.")], id="lbl-trees"),
+                dbc.Label(["AWNB Trees", help_icon("tt-trees")], id="lbl-trees"),
+                dbc.Tooltip("Number of bootstrap trees to average.", target="tt-trees"),
                 dbc.Input(id='trees-input', type='number', value=10, min=1)
             ], width=4, id="field-trees", style={"display": "none"}),
              
             dbc.Col([
-                dbc.Label(["MANB Prior", help_icon("tt-prior", "Prior probability for Model Averaging.")], id="lbl-prior"),
+                dbc.Label(["MANB Prior", help_icon("tt-prior")], id="lbl-prior"),
+                dbc.Tooltip("Prior probability for Model Averaging.", target="tt-prior"),
                 dbc.Input(id='prior-input', type='number', value=0.5, step=0.1)
             ], width=4, id="field-prior", style={"display": "none"}),
         ])
@@ -253,7 +289,8 @@ eval_section = html.Div(id="section-eval", style={"display": "none"}, children=[
     
     dbc.Row([
         dbc.Col([
-            dbc.Label(["Metric", help_icon("tt-eval-metric", "Evaluation metric to assess model performance.")]),
+            dbc.Label(["Metric", help_icon("tt-eval-metric")]),
+            dbc.Tooltip("Evaluation metric to assess model performance.", target="tt-eval-metric"),
             dcc.Dropdown(
                 id='eval-metric',
                 options=[
@@ -270,11 +307,13 @@ eval_section = html.Div(id="section-eval", style={"display": "none"}, children=[
     
     dbc.Row([
         dbc.Col([
-             dbc.Label(["Folds", help_icon("tt-cv-folds", "Number of folds for Cross-Validation.")], id='lbl-eval-folds'),
+             dbc.Label(["Folds", help_icon("tt-cv-folds")], id='lbl-eval-folds'),
+             dbc.Tooltip("Number of folds for Cross-Validation.", target="tt-cv-folds"),
              dbc.Input(id='eval-folds-input', type='number', min=2, step=1, value=10)
         ], width=3, id='field-eval-folds'),
         dbc.Col([
-            dbc.Label(["Structure Setting", help_icon("tt-dag", "If fixed, only parameters are relearned each fold. If not, structure is relearned (slower).")]),
+            dbc.Label(["Structure Setting", help_icon("tt-dag")]),
+            dbc.Tooltip("If fixed, only parameters are relearned each fold. If not, structure is relearned (slower).", target="tt-dag"),
             dbc.Checklist(
                 options=[{'label': ' Fix Structure (only relearn params)', 'value': 'fixed'}],
                 value=['fixed'], id='dag-check', switch=True
@@ -350,8 +389,92 @@ content = html.Div(id="page-content", style=CONTENT_STYLE, children=[
 app.layout = html.Div([
     dcc.Store(id='dataset-store'), 
     dcc.Store(id='active-section-store', data='data'),
+    dcc.Store(id='model-state-store'),  # Store model state
+    dcc.Interval(id='interval-component', interval=2000, n_intervals=0),  # Update every 2 seconds
     sidebar,
-    content
+    content,
+    
+    # Popovers with detailed descriptions
+    dbc.Popover(
+        [
+            dbc.PopoverHeader("Target (Class) Variable", style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}),
+            dbc.PopoverBody([
+                html.P("The target variable is the class you want to predict in your classification task."),
+                html.P("This should be a categorical variable in your dataset that you want the Bayesian Network Classifier to learn and predict."),
+            ]),
+        ],
+        id="help-popover-class",
+        target="help-button-class",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    dbc.Popover(
+        [
+            dbc.PopoverHeader(
+                [
+                    "Structure Learning Algorithms",
+                    html.I(className="fas fa-project-diagram ms-2", style={"color": "#0d6efd"})
+                ],
+                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}
+            ),
+            dbc.PopoverBody(
+                [
+                    html.Ul([
+                        html.Li([html.Strong("NB - Naive Bayes: "), "Simplest structure. Assumes all features are independent given the class. Fast and effective baseline."]),
+                        html.Li([html.Strong("TAN - Tree-Augmented Naive Bayes: "), "Extends NB by allowing tree-structured dependencies between features."]),
+                        html.Li([html.Strong("  • TAN (Chow-Liu): "), "Uses Chow-Liu algorithm to find optimal tree structure."]),
+                        html.Li([html.Strong("  • TAN (Hill-Climbing): "), "Uses greedy search to optimize tree structure."]),
+                        html.Li([html.Strong("AODE - Averaged One-Dependence Estimators: "), "Ensemble method that averages multiple one-dependence models."]),
+                        html.Li([html.Strong("KDB - k-Dependence Bayesian Classifier: "), "Allows each feature to have up to k parent features."]),
+                        html.Li([html.Strong("FSSJ - Forward Sequential Selection Join: "), "Wrapper method using forward greedy search."]),
+                        html.Li([html.Strong("BSEJ - Backward Sequential Elimination Join: "), "Wrapper method using backward elimination."]),
+                    ], style={"fontSize": "13px"}),
+                ],
+                style={"backgroundColor": "#ffffff", "borderRadius": "0 0 0.25rem 0.25rem", "maxWidth": "500px"}
+            ),
+        ],
+        id="help-popover-algorithms",
+        target="help-button-algorithms",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    dbc.Popover(
+        [
+            dbc.PopoverHeader(
+                [
+                    "Parameter Learning Methods",
+                    html.I(className="fas fa-sliders-h ms-2", style={"color": "#0d6efd"})
+                ],
+                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}
+            ),
+            dbc.PopoverBody(
+                [
+                    html.Ul([
+                        html.Li([html.Strong("MLE - Maximum Likelihood Estimation: "), "Uses raw frequency counts from data. No smoothing applied."]),
+                        html.Li([html.Strong("Bayes - Bayesian Estimation: "), "Uses Dirichlet prior for smoothing. Helps prevent zero probabilities."]),
+                        html.Li([html.Strong("WANBIA - Weighted Average of Naive Bayes with Instances Averaging: "), "Feature weighting method designed for NB, but works with any structure."]),
+                        html.Li([html.Strong("AWNB - Attribute Weighted Naive Bayes: "), "Bootstrap ensemble approach with weighted features. Designed for NB but applicable to other structures."]),
+                        html.Li([html.Strong("MANB - Model Averaged Naive Bayes: "), "Averages over multiple NB models. Only compatible with Naive Bayes structure."]),
+                    ], style={"fontSize": "13px"}),
+                    html.Hr(),
+                    html.Small([
+                        html.I(className="fas fa-info-circle text-info me-1"),
+                        "Note: MANB requires Naive Bayes structure. WANBIA & AWNB are optimized for NB but can be used with other structures."
+                    ], className="text-muted")
+                ],
+                style={"backgroundColor": "#ffffff", "borderRadius": "0 0 0.25rem 0.25rem", "maxWidth": "500px"}
+            ),
+        ],
+        id="help-popover-methods",
+        target="help-button-methods",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
 ])
 
 # =============================================================================
@@ -538,39 +661,134 @@ def execute_action(n_struc, n_param, n_eval, n_pred,
     
     if not df_json: return dbc.Alert("No dataset loaded!", color="warning")
     
-    global current_model
+    global current_model, current_structure_algorithm, current_params_learned
     df = pd.read_json(df_json, orient='split')
     
     # --- TRAIN STRUCTURE ---
     if trigger == 'btn-train-structure':
         try:
-            if   struct_method == 'NB':      model = bnclassify.nb(class_var, df)
-            elif struct_method == 'TAN_CL':  model = bnclassify.tan_cl(class_var, df, score=score.lower(), root=root)
-            elif struct_method == 'TAN_HC':  model = bnclassify.tan_hc(class_var, df, score=score.lower(), epsilon=eps)
-            elif struct_method == 'KDB':     model = bnclassify.kdb(class_var, df, k=k)
-            elif struct_method == 'AODE':    model = bnclassify.aode(class_var, df)
-            elif struct_method == 'FSSJ':    model = bnclassify.fssj(class_var, df, k=s_folds, epsilon=eps)
-            elif struct_method == 'BSEJ':    model = bnclassify.bsej(class_var, df, k=s_folds, epsilon=eps)
-            else: return dbc.Alert("Unknown Algorithm", color="danger")
+            if   struct_method == 'NB':      
+                model = bnclassify.nb(class_var, df)
+            elif struct_method == 'TAN_CL':  
+                model = bnclassify.tan_cl(class_var, df, score=score.lower(), root=root)
+            elif struct_method == 'TAN_HC':  
+                model = bnclassify.tan_hc(class_var, df, score=score.lower(), epsilon=eps)
+            elif struct_method == 'KDB':     
+                model = bnclassify.kdb(class_var, df, k=k)
+            elif struct_method == 'AODE':    
+                model = bnclassify.aode(class_var, df)
+            elif struct_method == 'FSSJ':    
+                model = bnclassify.fssj(class_var, df, k=s_folds, epsilon=eps, smooth=0)
+            elif struct_method == 'BSEJ':    
+                model = bnclassify.bsej(class_var, df, k=s_folds, epsilon=eps, smooth=0)
+            else: 
+                return dbc.Alert("Unknown Algorithm", color="danger")
             
             current_model = model
-            return dbc.Alert(f"Structure learned successfully: {struct_method}", color="success")
+            current_structure_algorithm = struct_method
+            current_params_learned = False  # Reset parameters flag when new structure is learned
+            
+            # Algorithm descriptions for user feedback
+            algo_info = {
+                'NB': 'Naive Bayes - simplest structure with class as only parent',
+                'TAN_CL': 'Tree-Augmented Network (Chow-Liu) - tree structure between features',
+                'TAN_HC': 'Tree-Augmented Network (Hill-Climbing) - optimized tree structure',
+                'AODE': 'Averaged One-Dependence Estimator - ensemble of structures',
+                'KDB': f'k-Dependence Bayesian Classifier - features can have up to {k} parents',
+                'FSSJ': 'Forward Sequential Selection Join - greedy forward search',
+                'BSEJ': 'Backward Sequential Elimination Join - greedy backward search'
+            }
+            
+            description = algo_info.get(struct_method, struct_method)
+            
+            return html.Div([
+                dbc.Alert([
+                    html.H5([html.I(className="fas fa-check-circle me-2"), f"Structure Learned: {struct_method}"], className="alert-heading mb-2"),
+                    html.P(description, className="mb-2"),
+                    html.Hr(),
+                    html.P([
+                        html.Strong("Next steps: "),
+                        "Go to 'Parameter Learning' to estimate the conditional probability tables (CPTs), or go to 'Inspect Model' to see the structure."
+                    ], className="mb-0 small")
+                ], color="success")
+            ])
         except Exception as e:
-             return dbc.Alert(f"Structure Learning Failed: {e}", color="danger")
+             return dbc.Alert([
+                 html.H5([html.I(className="fas fa-times-circle me-2"), f"Structure Learning Failed: {struct_method}"], className="alert-heading"),
+                 html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
+             ], color="danger")
 
     # --- LEARN PARAMETERS ---
     if trigger == 'btn-learn-params':
-        if current_model is None: return dbc.Alert("No structure! Learn structure first.", color="warning")
+        if current_model is None: 
+            return dbc.Alert("⚠ No structure! Learn structure first.", color="warning")
+        
+        # Validate MANB restriction: only works with Naive Bayes structures
+        if param_method == 'MANB' and current_structure_algorithm != 'NB':
+            return dbc.Alert([
+                html.I(className="fas fa-exclamation-triangle me-2"),
+                html.Strong("MANB Restriction: "),
+                f"MANB can only be applied to Naive Bayes structures. Current structure: {current_structure_algorithm}. ",
+                "Please use a different parameter learning method or re-train with Naive Bayes structure."
+            ], color="danger")
+        
         try:
-            if   param_method == 'MLE':    current_model = bnclassify.lp(current_model, df, smooth=0)
-            elif param_method == 'Bayes':  current_model = bnclassify.lp(current_model, df, smooth=alpha)
-            elif param_method == 'WANBIA': current_model = bnclassify.lp(current_model, df, wanbia=True)
-            elif param_method == 'AWNB':   current_model = bnclassify.lp(current_model, df, awnb_trees=trees)
-            elif param_method == 'MANB':   current_model = bnclassify.lp(current_model, df, manb_prior=prior)
+            if   param_method == 'MLE':    
+                current_model = bnclassify.lp(current_model, df, smooth=0)
+            elif param_method == 'Bayes':  
+                current_model = bnclassify.lp(current_model, df, smooth=alpha)
+            elif param_method == 'WANBIA': 
+                current_model = bnclassify.lp(current_model, df, wanbia=True)
+            elif param_method == 'AWNB':   
+                current_model = bnclassify.lp(current_model, df, awnb_trees=trees)
+            elif param_method == 'MANB':   
+                current_model = bnclassify.lp(current_model, df, manb_prior=prior)
             
-            return dbc.Alert(f"Parameters learned using {param_method}", color="success")
+            # Mark parameters as learned
+            current_params_learned = True
+            
+            # Parameter method descriptions
+            param_info = {
+                'MLE': 'Maximum Likelihood Estimation - raw frequency counts',
+                'Bayes': f'Bayesian estimation with Dirichlet prior (alpha={alpha})',
+                'WANBIA': 'Weighted Averaged Naive Bayes with Instances - feature weighting',
+                'AWNB': f'Attribute Weighted Naive Bayes - bootstrap ensemble ({trees} trees)',
+                'MANB': f'Model Averaged Naive Bayes - prior={prior}'
+            }
+            
+            description = param_info.get(param_method, param_method)
+            
+            # Add note for WANBIA/AWNB when used with non-NB structures
+            extra_note = None
+            if param_method in ['WANBIA', 'AWNB'] and current_structure_algorithm != 'NB':
+                extra_note = html.Div([
+                    html.Hr(),
+                    html.Small([
+                        html.I(className="fas fa-info-circle text-info me-1"),
+                        f"Note: {param_method} is designed for Naive Bayes but can be applied to other structures. Results may vary."
+                    ], className="text-muted")
+                ])
+            
+            return html.Div([
+                dbc.Alert([
+                    html.H5([html.I(className="fas fa-check-circle me-2"), f"Parameters Learned: {param_method}"], className="alert-heading mb-2"),
+                    html.P([
+                        html.Strong("Structure: "), f"{current_structure_algorithm}", html.Br(),
+                        html.Strong("Method: "), description
+                    ], className="mb-2"),
+                    extra_note if extra_note else "",
+                    html.Hr(),
+                    html.P([
+                        html.Strong("Next steps: "),
+                        "Model is ready! Go to 'Evaluation' to assess performance, 'Prediction' to classify new data, or 'Inspect Model' to examine the learned network."
+                    ], className="mb-0 small")
+                ], color="success")
+            ])
         except Exception as e:
-            return dbc.Alert(f"Parameter Learning Failed: {e}", color="danger")
+            return dbc.Alert([
+                html.H5([html.I(className="fas fa-times-circle me-2"), f"Parameter Learning Failed: {param_method}"], className="alert-heading"),
+                html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
+            ], color="danger")
             
     # --- EVALUATE ---
     if trigger == 'btn-evaluate':
@@ -685,6 +903,93 @@ def update_inspection(active_tab, n_nav):
     
     return html.Div("Select a tab")
 
+
+# 6. MODEL STATE INFO CALLBACK
+@app.callback(
+    Output('current-params-info', 'children'),
+    Input('interval-component', 'n_intervals')
+)
+def update_params_info(n):
+    global current_model, current_structure_algorithm, current_params_learned
+    if current_structure_algorithm is None:
+        return html.Div([
+            html.I(className="fas fa-info-circle me-2"),
+            "No structure learned yet. Please go to Structure Learning first."
+        ])
+    
+    if current_model is None:
+        return html.Div([
+            html.I(className="fas fa-info-circle me-2"),
+            "No structure learned yet. Please go to Structure Learning first."
+        ])
+    
+    # Use the tracking flag instead of heuristic
+    status_icon = "fas fa-check-circle text-success me-2" if current_params_learned else "fas fa-hourglass-half text-warning me-2"
+    params_status = "Parameters learned" if current_params_learned else "Parameters not yet learned"
+    
+    # Add compatibility notes
+    compatibility_notes = []
+    if current_structure_algorithm != 'NB':
+        compatibility_notes.append(
+            html.Small([
+                html.I(className="fas fa-info-circle text-info me-1"),
+                "MANB requires Naive Bayes structure. WANBIA & AWNB are designed for NB but can be used with other structures."
+            ], className="text-muted d-block mt-2")
+        )
+    
+    return html.Div([
+        html.I(className=status_icon),
+        html.Strong(f"Current Structure: {current_structure_algorithm}"),
+        html.Span(f" | {params_status}", className="ms-2"),
+        *compatibility_notes
+    ])
+
+# 7. RESET CALLBACK
+@app.callback(
+    [Output('dataset-store', 'data', allow_duplicate=True),
+     Output('output-area', 'children', allow_duplicate=True)],
+    Input('reset-button', 'n_clicks'),
+    prevent_initial_call=True
+)
+def reset_application(n_clicks):
+    if n_clicks:
+        global current_model, current_structure_algorithm, current_params_learned
+        current_model = None
+        current_structure_algorithm = None
+        current_params_learned = False
+        return None, dbc.Alert("Application reset successfully!", color="success")
+    return dash.no_update, dash.no_update
+
+# Popover callbacks
+@app.callback(
+    Output("help-popover-class", "is_open"),
+    Input("help-button-class", "n_clicks"),
+    State("help-popover-class", "is_open")
+)
+def toggle_class_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-algorithms", "is_open"),
+    Input("help-button-algorithms", "n_clicks"),
+    State("help-popover-algorithms", "is_open")
+)
+def toggle_algorithms_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-methods", "is_open"),
+    Input("help-button-methods", "n_clicks"),
+    State("help-popover-methods", "is_open")
+)
+def toggle_methods_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8056)
