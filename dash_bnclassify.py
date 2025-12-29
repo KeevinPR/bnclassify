@@ -175,8 +175,15 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
             # TAN_CL - Score & Root (first row)
             dbc.Row([
                 dbc.Col([
-                    dbc.Label(["Score Metric", help_icon("tt-score")], id="lbl-score"),
-                    dbc.Tooltip("AIC/BIC include penalties for complexity. Log-Likelihood (LL) is raw fit. Only for TAN (Chow-Liu).", target="tt-score"),
+                    html.Div([
+                        dbc.Label("Score Metric", style={'display': 'inline-block', 'marginRight': '5px'}),
+                        dbc.Button(
+                            html.I(className="fas fa-question-circle"),
+                            id="help-button-score",
+                            color="link",
+                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                        ),
+                    ], id="lbl-score"),
                     dcc.Dropdown(
                         id='score-dropdown',
                         options=[
@@ -190,8 +197,15 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
                 
                 # TAN_CL - Root
                 dbc.Col([
-                    dbc.Label(["Root Node", help_icon("tt-root")], id="lbl-root"),
-                    dbc.Tooltip("Root for the Tree-Augmented structure. Auto-selected if blank. Only for TAN (Chow-Liu).", target="tt-root"),
+                    html.Div([
+                        dbc.Label("Root Node", style={'display': 'inline-block', 'marginRight': '5px'}),
+                        dbc.Button(
+                            html.I(className="fas fa-question-circle"),
+                            id="help-button-root",
+                            color="link",
+                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                        ),
+                    ], id="lbl-root"),
                     dcc.Dropdown(id='root-dropdown', placeholder="Auto", clearable=True)
                 ], width=4, id="field-root", style={"display": "none"}),
             ]),
@@ -199,21 +213,42 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
             # Wrapper Algorithms - CV Folds & Epsilon (second row)
             dbc.Row([
                 dbc.Col([
-                   dbc.Label(["CV Folds", help_icon("tt-folds")], id="lbl-folds"),
-                   dbc.Tooltip("Number of folds for internal cross-validation in wrapper algorithms (TAN-HC, FSSJ, BSEJ, KDB).", target="tt-folds"),
+                   html.Div([
+                        dbc.Label("CV Folds", style={'display': 'inline-block', 'marginRight': '5px'}),
+                        dbc.Button(
+                            html.I(className="fas fa-question-circle"),
+                            id="help-button-folds",
+                            color="link",
+                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                        ),
+                    ], id="lbl-folds"),
                    dbc.Input(id='struct-folds-input', type='number', value=5, min=2, step=1)
                 ], width=4, id="field-folds", style={"display": "none"}),
                 
                 dbc.Col([
-                    dbc.Label(["Epsilon", help_icon("tt-eps")], id="lbl-eps"),
-                    dbc.Tooltip("Min improvement threshold for Greedy Search. Used in TAN-HC, FSSJ, BSEJ, and KDB.", target="tt-eps"),
+                    html.Div([
+                        dbc.Label("Epsilon", style={'display': 'inline-block', 'marginRight': '5px'}),
+                        dbc.Button(
+                            html.I(className="fas fa-question-circle"),
+                            id="help-button-epsilon",
+                            color="link",
+                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                        ),
+                    ], id="lbl-eps"),
                     dbc.Input(id='epsilon-input', type='number', value=0.01, step=0.001, min=0)
                 ], width=4, id="field-epsilon", style={"display": "none"}),
                 
                 # KDB - kdbk (Max Parents per Feature)
                 dbc.Col([
-                    dbc.Label(["kdbk (Max Parents)", help_icon("tt-kdbk")], id="lbl-kdbk"),
-                    dbc.Tooltip("Maximum number of feature parents per feature in KDB.", target="tt-kdbk"),
+                    html.Div([
+                        dbc.Label("k (Max Parents)", style={'display': 'inline-block', 'marginRight': '5px'}),
+                        dbc.Button(
+                            html.I(className="fas fa-question-circle"),
+                            id="help-button-k",
+                            color="link",
+                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                        ),
+                    ], id="lbl-kdbk"),
                     dbc.Input(id='kdbk-input', type='number', value=2, min=1, step=1)
                 ], width=4, id="field-kdbk", style={"display": "none"}),
             ], className="mt-2"),
@@ -258,23 +293,44 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
         dbc.CardHeader("Parameter Estimation Options"),
         dbc.CardBody([
             dbc.Row([
-                dbc.Col([
-                    dbc.Label(["Smoothing Alpha", help_icon("tt-alpha")], id="lbl-alpha"),
-                    dbc.Tooltip("Laplace smoothing parameter. 0 = MLE.", target="tt-alpha"),
-                    dbc.Input(id='alpha-input', type='number', value=0.5, step=0.1)
-                ], width=4, id="field-alpha"),
-                
-                dbc.Col([
-                    dbc.Label(["AWNB Trees", help_icon("tt-trees")], id="lbl-trees"),
-                    dbc.Tooltip("Number of bootstrap trees to average.", target="tt-trees"),
-                    dbc.Input(id='trees-input', type='number', value=10, min=1)
-                ], width=4, id="field-trees", style={"display": "none"}),
-                 
-                dbc.Col([
-                    dbc.Label(["MANB Prior", help_icon("tt-prior")], id="lbl-prior"),
-                    dbc.Tooltip("Prior probability for Model Averaging.", target="tt-prior"),
-                    dbc.Input(id='prior-input', type='number', value=0.5, step=0.1)
-                ], width=4, id="field-prior", style={"display": "none"}),
+            dbc.Col([
+                html.Div([
+                    dbc.Label("Smoothing Alpha", style={'display': 'inline-block', 'marginRight': '5px'}),
+                    dbc.Button(
+                        html.I(className="fas fa-question-circle"),
+                        id="help-button-alpha",
+                        color="link",
+                        style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                    ),
+                ], id="lbl-alpha"),
+                dbc.Input(id='alpha-input', type='number', value=0.5, step=0.1)
+            ], width=4, id="field-alpha"),
+            
+            dbc.Col([
+                html.Div([
+                    dbc.Label("AWNB Trees", style={'display': 'inline-block', 'marginRight': '5px'}),
+                    dbc.Button(
+                        html.I(className="fas fa-question-circle"),
+                        id="help-button-trees",
+                        color="link",
+                        style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                    ),
+                ], id="lbl-trees"),
+                dbc.Input(id='trees-input', type='number', value=10, min=1)
+            ], width=4, id="field-trees", style={"display": "none"}),
+             
+            dbc.Col([
+                html.Div([
+                    dbc.Label("MANB Prior", style={'display': 'inline-block', 'marginRight': '5px'}),
+                    dbc.Button(
+                        html.I(className="fas fa-question-circle"),
+                        id="help-button-prior",
+                        color="link",
+                        style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                    ),
+                ], id="lbl-prior"),
+                dbc.Input(id='prior-input', type='number', value=0.5, step=0.1)
+            ], width=4, id="field-prior", style={"display": "none"}),
             ])
         ])
     ]),
@@ -310,8 +366,15 @@ eval_section = html.Div(id="section-eval", style={"display": "none"}, children=[
     
     dbc.Row([
         dbc.Col([
-            dbc.Label(["Metric", help_icon("tt-eval-metric")]),
-            dbc.Tooltip("Evaluation metric to assess model performance.", target="tt-eval-metric"),
+            html.Div([
+                dbc.Label("Evaluation Metric", style={'display': 'inline-block', 'marginRight': '5px'}),
+                dbc.Button(
+                    html.I(className="fas fa-question-circle"),
+                    id="help-button-eval-metric",
+                    color="link",
+                    style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                ),
+            ]),
             dcc.Dropdown(
                 id='eval-metric',
                 options=[
@@ -328,13 +391,27 @@ eval_section = html.Div(id="section-eval", style={"display": "none"}, children=[
     
     dbc.Row([
         dbc.Col([
-             dbc.Label(["Folds", help_icon("tt-cv-folds")], id='lbl-eval-folds'),
-             dbc.Tooltip("Number of folds for Cross-Validation.", target="tt-cv-folds"),
+             html.Div([
+                dbc.Label("CV Folds", style={'display': 'inline-block', 'marginRight': '5px'}),
+                dbc.Button(
+                    html.I(className="fas fa-question-circle"),
+                    id="help-button-cv-folds",
+                    color="link",
+                    style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                ),
+             ], id='lbl-eval-folds'),
              dbc.Input(id='eval-folds-input', type='number', min=2, step=1, value=10)
         ], width=3, id='field-eval-folds'),
         dbc.Col([
-            dbc.Label(["Structure Setting", help_icon("tt-dag")]),
-            dbc.Tooltip("If fixed, only parameters are relearned each fold. If not, structure is relearned (slower).", target="tt-dag"),
+            html.Div([
+                dbc.Label("Structure Setting", style={'display': 'inline-block', 'marginRight': '5px'}),
+                dbc.Button(
+                    html.I(className="fas fa-question-circle"),
+                    id="help-button-dag",
+                    color="link",
+                    style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                ),
+            ]),
             dbc.Checklist(
                 options=[{'label': ' Fix Structure (only relearn params)', 'value': 'fixed'}],
                 value=['fixed'], id='dag-check', switch=True
@@ -492,6 +569,266 @@ app.layout = html.Div([
         ],
         id="help-popover-methods",
         target="help-button-methods",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    # Structure Parameters Popovers
+    dbc.Popover(
+        [
+            dbc.PopoverHeader("Score Metric", style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}),
+            dbc.PopoverBody([
+                html.P([html.Strong("Score metrics"), " are used to evaluate and compare different network structures during learning."]),
+                html.Ul([
+                    html.Li([html.Strong("AIC (Akaike Information Criterion): "), "Balances model fit with complexity. Lower values are better. Includes penalty for number of parameters."]),
+                    html.Li([html.Strong("BIC (Bayesian Information Criterion): "), "Similar to AIC but with stronger penalty for complexity. Preferred for larger datasets."]),
+                    html.Li([html.Strong("LL (Log-Likelihood): "), "Raw measure of how well the model fits the data without complexity penalty."]),
+                ], style={"fontSize": "13px"}),
+                html.Hr(),
+                html.Small([
+                    html.I(className="fas fa-info-circle text-info me-1"),
+                    "Only used with TAN (Chow-Liu) algorithm."
+                ], className="text-muted")
+            ]),
+        ],
+        id="help-popover-score",
+        target="help-button-score",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    dbc.Popover(
+        [
+            dbc.PopoverHeader("Root Node", style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}),
+            dbc.PopoverBody([
+                html.P("The root node is the starting point for the tree structure in Tree-Augmented Naive Bayes (TAN)."),
+                html.P("If left blank, the algorithm will automatically select the most informative feature as root."),
+                html.P("Manually selecting a root can be useful if you have domain knowledge about feature dependencies."),
+                html.Hr(),
+                html.Small([
+                    html.I(className="fas fa-info-circle text-info me-1"),
+                    "Only used with TAN (Chow-Liu) algorithm."
+                ], className="text-muted")
+            ]),
+        ],
+        id="help-popover-root",
+        target="help-button-root",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    dbc.Popover(
+        [
+            dbc.PopoverHeader("Cross-Validation Folds", style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}),
+            dbc.PopoverBody([
+                html.P("Number of folds for internal cross-validation during structure learning."),
+                html.P("The dataset is divided into k parts. The model is trained on k-1 parts and validated on the remaining part. This process repeats k times."),
+                html.P("Higher values give more reliable estimates but increase computation time."),
+                html.Hr(),
+                html.Small([
+                    html.I(className="fas fa-info-circle text-info me-1"),
+                    "Used in wrapper algorithms: TAN-HC, FSSJ, BSEJ, and KDB."
+                ], className="text-muted")
+            ]),
+        ],
+        id="help-popover-folds",
+        target="help-button-folds",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    dbc.Popover(
+        [
+            dbc.PopoverHeader("Epsilon (ε)", style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}),
+            dbc.PopoverBody([
+                html.P("Minimum improvement threshold for greedy search algorithms."),
+                html.P("The algorithm stops when the improvement in score between iterations falls below this threshold."),
+                html.Ul([
+                    html.Li([html.Strong("Smaller values: "), "More thorough search, potentially better results, but slower."]),
+                    html.Li([html.Strong("Larger values: "), "Faster convergence, but may stop before finding optimal structure."]),
+                ], style={"fontSize": "13px"}),
+                html.Hr(),
+                html.Small([
+                    html.I(className="fas fa-info-circle text-info me-1"),
+                    "Used in: TAN-HC, FSSJ, BSEJ, and KDB algorithms."
+                ], className="text-muted")
+            ]),
+        ],
+        id="help-popover-epsilon",
+        target="help-button-epsilon",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    dbc.Popover(
+        [
+            dbc.PopoverHeader("k (Max Parents)", style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}),
+            dbc.PopoverBody([
+                html.P([html.Strong("k-Dependence"), " refers to the maximum number of feature parents that each feature can have (in addition to the class)."]),
+                html.Ul([
+                    html.Li([html.Strong("k = 0: "), "Equivalent to Naive Bayes (no feature dependencies)."]),
+                    html.Li([html.Strong("k = 1: "), "Each feature can have at most 1 other feature as parent (similar to TAN)."]),
+                    html.Li([html.Strong("k = 2 or more: "), "Allows richer dependency structures, but increases complexity."]),
+                ], style={"fontSize": "13px"}),
+                html.Hr(),
+                html.Small([
+                    html.I(className="fas fa-info-circle text-info me-1"),
+                    "Only used with KDB (k-Dependence Bayesian Classifier) algorithm."
+                ], className="text-muted")
+            ]),
+        ],
+        id="help-popover-k",
+        target="help-button-k",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    # Parameter Learning Popovers
+    dbc.Popover(
+        [
+            dbc.PopoverHeader("Smoothing Alpha (α)", style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}),
+            dbc.PopoverBody([
+                html.P("Laplace smoothing parameter for Bayesian parameter estimation."),
+                html.P("Adds a small pseudo-count to all probability estimates to avoid zero probabilities."),
+                html.Ul([
+                    html.Li([html.Strong("α = 0: "), "No smoothing (equivalent to MLE). May cause issues with unseen data."]),
+                    html.Li([html.Strong("α = 0.5: "), "Moderate smoothing. Good default for most cases."]),
+                    html.Li([html.Strong("α = 1: "), "Laplace smoothing. Adds uniform prior."]),
+                ], style={"fontSize": "13px"}),
+                html.Hr(),
+                html.Small([
+                    html.I(className="fas fa-info-circle text-info me-1"),
+                    "Only applies when using Bayesian parameter learning method."
+                ], className="text-muted")
+            ]),
+        ],
+        id="help-popover-alpha",
+        target="help-button-alpha",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    dbc.Popover(
+        [
+            dbc.PopoverHeader("AWNB Trees", style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}),
+            dbc.PopoverBody([
+                html.P("Number of bootstrap trees to create and average in the AWNB (Attribute Weighted Naive Bayes) ensemble."),
+                html.P("Each tree is trained on a bootstrap sample of the data with weighted features."),
+                html.Ul([
+                    html.Li([html.Strong("Fewer trees (5-10): "), "Faster computation, but potentially less stable."]),
+                    html.Li([html.Strong("More trees (20-50): "), "More stable predictions, but slower."]),
+                ], style={"fontSize": "13px"}),
+                html.Hr(),
+                html.Small([
+                    html.I(className="fas fa-info-circle text-info me-1"),
+                    "Only applies when using AWNB parameter learning method."
+                ], className="text-muted")
+            ]),
+        ],
+        id="help-popover-trees",
+        target="help-button-trees",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    dbc.Popover(
+        [
+            dbc.PopoverHeader("MANB Prior", style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}),
+            dbc.PopoverBody([
+                html.P("Prior probability used in Model Averaged Naive Bayes (MANB) for model weighting."),
+                html.P("MANB averages predictions over multiple models weighted by their posterior probabilities."),
+                html.P("The prior influences how much weight is given to simpler vs. more complex models."),
+                html.Hr(),
+                html.Small([
+                    html.I(className="fas fa-exclamation-triangle text-warning me-1"),
+                    "MANB only works with Naive Bayes structure."
+                ], className="text-muted")
+            ]),
+        ],
+        id="help-popover-prior",
+        target="help-button-prior",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    # Evaluation Popovers
+    dbc.Popover(
+        [
+            dbc.PopoverHeader(
+                [
+                    "Evaluation Metrics",
+                    html.I(className="fas fa-chart-line ms-2", style={"color": "#0d6efd"})
+                ],
+                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}
+            ),
+            dbc.PopoverBody([
+                html.P("Choose a metric to assess your model's performance:"),
+                html.Ul([
+                    html.Li([html.Strong("Cross-Validation Accuracy: "), "Most reliable. Tests model on multiple data splits. Gives percentage of correct predictions."]),
+                    html.Li([html.Strong("AIC (Akaike Information Criterion): "), "Balances fit and complexity. Lower is better."]),
+                    html.Li([html.Strong("BIC (Bayesian Information Criterion): "), "Similar to AIC with stronger complexity penalty. Lower is better."]),
+                    html.Li([html.Strong("Log-Likelihood: "), "Raw goodness of fit. Higher is better. Doesn't penalize complexity."]),
+                ], style={"fontSize": "13px"}),
+            ]),
+        ],
+        id="help-popover-eval-metric",
+        target="help-button-eval-metric",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    dbc.Popover(
+        [
+            dbc.PopoverHeader("CV Folds (Evaluation)", style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}),
+            dbc.PopoverBody([
+                html.P("Number of folds for cross-validation during model evaluation."),
+                html.P("The dataset is split into k equal parts. The model is trained on k-1 parts and tested on the remaining part. This repeats k times."),
+                html.Ul([
+                    html.Li([html.Strong("5-10 folds: "), "Common choices. Good balance of reliability and speed."]),
+                    html.Li([html.Strong("Leave-one-out (n folds): "), "Most thorough but very slow for large datasets."]),
+                ], style={"fontSize": "13px"}),
+                html.Hr(),
+                html.Small([
+                    html.I(className="fas fa-info-circle text-info me-1"),
+                    "Only applies when using Cross-Validation Accuracy metric."
+                ], className="text-muted")
+            ]),
+        ],
+        id="help-popover-cv-folds",
+        target="help-button-cv-folds",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+    ),
+    
+    dbc.Popover(
+        [
+            dbc.PopoverHeader("Structure Setting", style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}),
+            dbc.PopoverBody([
+                html.P("Controls whether the network structure is fixed during cross-validation:"),
+                html.Ul([
+                    html.Li([html.Strong("Fixed Structure (Checked): "), "Only parameters (CPTs) are re-learned in each fold. The structure remains the same. Faster and evaluates the specific structure you learned."]),
+                    html.Li([html.Strong("Relearn Structure (Unchecked): "), "Both structure and parameters are learned fresh in each fold. Slower but gives a more realistic estimate of the entire learning algorithm's performance."]),
+                ], style={"fontSize": "13px"}),
+                html.Hr(),
+                html.Small([
+                    html.I(className="fas fa-lightbulb text-warning me-1"),
+                    "Tip: Use fixed structure to evaluate a specific network. Uncheck to evaluate the full learning procedure."
+                ], className="text-muted")
+            ]),
+        ],
+        id="help-popover-dag",
+        target="help-button-dag",
         placement="right",
         is_open=False,
         trigger="hover",
@@ -1188,6 +1525,116 @@ def toggle_algorithms_popover(n, is_open):
     State("help-popover-methods", "is_open")
 )
 def toggle_methods_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-score", "is_open"),
+    Input("help-button-score", "n_clicks"),
+    State("help-popover-score", "is_open")
+)
+def toggle_score_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-root", "is_open"),
+    Input("help-button-root", "n_clicks"),
+    State("help-popover-root", "is_open")
+)
+def toggle_root_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-folds", "is_open"),
+    Input("help-button-folds", "n_clicks"),
+    State("help-popover-folds", "is_open")
+)
+def toggle_folds_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-epsilon", "is_open"),
+    Input("help-button-epsilon", "n_clicks"),
+    State("help-popover-epsilon", "is_open")
+)
+def toggle_epsilon_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-k", "is_open"),
+    Input("help-button-k", "n_clicks"),
+    State("help-popover-k", "is_open")
+)
+def toggle_k_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-alpha", "is_open"),
+    Input("help-button-alpha", "n_clicks"),
+    State("help-popover-alpha", "is_open")
+)
+def toggle_alpha_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-trees", "is_open"),
+    Input("help-button-trees", "n_clicks"),
+    State("help-popover-trees", "is_open")
+)
+def toggle_trees_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-prior", "is_open"),
+    Input("help-button-prior", "n_clicks"),
+    State("help-popover-prior", "is_open")
+)
+def toggle_prior_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-eval-metric", "is_open"),
+    Input("help-button-eval-metric", "n_clicks"),
+    State("help-popover-eval-metric", "is_open")
+)
+def toggle_eval_metric_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-cv-folds", "is_open"),
+    Input("help-button-cv-folds", "n_clicks"),
+    State("help-popover-cv-folds", "is_open")
+)
+def toggle_cv_folds_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("help-popover-dag", "is_open"),
+    Input("help-button-dag", "n_clicks"),
+    State("help-popover-dag", "is_open")
+)
+def toggle_dag_popover(n, is_open):
     if n:
         return not is_open
     return is_open
