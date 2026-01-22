@@ -46,6 +46,49 @@ CONTENT_STYLE = {
     "padding": "2rem 1rem",
 }
 
+# Cytoscape stylesheet - CIG Corporate Style (from MBC)
+cytoscape_stylesheet = [
+    {
+        'selector': 'node',
+        'style': {
+            'content': 'data(label)',
+            'text-valign': 'center',
+            'text-halign': 'center',
+            'background-color': '#E3F2FD',
+            'border-color': '#90CAF9',
+            'border-width': 2,
+            'width': 50,
+            'height': 50,
+            'font-size': 11,
+            'color': '#333',
+            'text-wrap': 'wrap',
+            'text-max-width': '80px'
+        }
+    },
+    {
+        'selector': 'node[classes="class_node"]',
+        'style': {
+            'background-color': '#00A2E1',
+            'border-color': '#0077A8',
+            'shape': 'ellipse',
+            'color': '#FFFFFF',
+            'font-weight': 'bold',
+            'border-width': 3
+        }
+    },
+    {
+        'selector': 'edge',
+        'style': {
+            'curve-style': 'bezier',
+            'target-arrow-shape': 'triangle',
+            'target-arrow-color': '#666',
+            'line-color': '#666',
+            'width': 2,
+            'opacity': 0.7
+        }
+    }
+]
+
 # =============================================================================
 #                                COMPONENTS
 # =============================================================================
@@ -79,6 +122,7 @@ def help_icon(id):
     return html.I(className="fas fa-question-circle ms-1 text-info", id=id, style={"cursor": "pointer"})
 
 # --- 1. DATA SECTION ---
+# --- 1. DATA SECTION ---
 data_section = html.Div(id="section-data", children=[
     html.H2("Data & Connectivity"),
     html.P("Upload your dataset or use the default one to get started."),
@@ -102,11 +146,10 @@ data_section = html.Div(id="section-data", children=[
             ),
             dbc.Checkbox(
                 id='use-default-dataset',
-                label=" Use default 'car' dataset (features & class column)",
+                label=" Use default 'Asia' (lung cancer) dataset",
                 value=False,
                 className="mb-3"
             ),
-            
             html.Div(id='data-status-msg', className="text-success fw-bold"),
             html.Br(),
             
@@ -118,9 +161,10 @@ data_section = html.Div(id="section-data", children=[
                     style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
                 ),
             ], className="fw-bold"),
-            dcc.Dropdown(id='class-dropdown', placeholder="Select class column", clearable=False),
+            dcc.Dropdown(id='class-dropdown', placeholder="Select class column", clearable=False, style={'position': 'relative', 'zIndex': '9999'}),
         ])
     ),
+
     html.Br(),
     html.H5("Preview"),
     html.Div(id='data-preview')
@@ -440,6 +484,17 @@ predict_section = html.Div(id="section-predict", style={"display": "none"}, chil
         },
         multiple=False
     ),
+    html.Div([
+        html.Small("Or use the default 'Asia' test set:", className="text-muted me-2"),
+        dbc.Button("Load Test Data (Asia)", id="btn-load-test-asia", color="secondary", size="sm", outline=True)
+    ], className="mt-2 mb-3"),
+    
+    dbc.Alert([
+        html.I(className="fas fa-info-circle me-2"),
+        "How Prediction Works: Upload a CSV file (or load default) containing features. ",
+        "The model predicts the class for each row (batch prediction). ",
+        "Note: Unlike single-case prediction where you select values, this tool processes entire datasets for validation."
+    ], color="light", className="small mt-2"),
     html.Br(),
     dbc.Checkbox(id='prob-check', label=" Output Posterior Probabilities", value=False),
     html.Br(),
@@ -893,24 +948,28 @@ def navigate(n_data, n_struc, n_eval, n_pred, n_insp):
     Input('upload-data',      'contents'),
     Input('use-default-dataset', 'value'),
     State('upload-data',      'filename'),
-    prevent_initial_call=True
+    prevent_initial_call=False  # Allow initial load if default is checked by default (it's False currently)
 )
 def load_and_preview_data(upload_contents, use_default, upload_filename):
     ctx = callback_context
-    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else 'init'
     
     df = None
     msg = ""
     
-    if trigger_id == 'use-default-dataset' and use_default:
+    # Priority Logic:
+    # 1. If 'Use Default' is checked, it overrides.
+    # 2. If Upload triggers, load upload.
+    
+    if use_default:
         try:
-            default_file = '/var/www/html/CIGModels/backend/cigmodelsdjango/cigmodelsdjangoapp/bnclassify/carwithnames.data'
+            default_file = '/var/www/html/CIGModels/backend/cigmodelsdjango/cigmodelsdjangoapp/bnclassify/asia.csv'
             df = pd.read_csv(default_file)
-            msg = "Loaded default 'car' dataset."
+            msg = "Loaded default 'Asia' (lung cancer) dataset."
         except Exception as e:
-            return dbc.Alert(f"Error loading default: {e}", color="danger"), [], None, None, ""
+            return dbc.Alert(f"Error loading asia data: {e}", color="danger"), [], None, None, ""
             
-    elif trigger_id == 'upload-data' and upload_contents:
+    elif upload_contents:
         try:
             _, content_string = upload_contents.split(',', 1)
             decoded = base64.b64decode(content_string)
@@ -918,7 +977,7 @@ def load_and_preview_data(upload_contents, use_default, upload_filename):
             msg = f"Loaded file: {upload_filename}"
         except Exception as e:
             return dbc.Alert(f"Error reading file: {e}", color="danger"), [], None, None, ""
-    
+
     if df is not None:
         # Create preview
         preview_table = dash_table.DataTable(
@@ -935,6 +994,39 @@ def load_and_preview_data(upload_contents, use_default, upload_filename):
         return preview_table, class_cols, default_class, df.to_json(date_format='iso', orient='split'), msg
     
     return dash.no_update, dash.no_update, dash.no_update, dash.no_update, ""
+
+@app.callback(
+    Output('upload-predict', 'contents'),
+    [Input('btn-load-test-car', 'n_clicks'),
+     Input('btn-load-test-asia', 'n_clicks')],
+    prevent_initial_call=True
+)
+def load_test_data(n_car, n_asia):
+    ctx = callback_context
+    if not ctx.triggered: return dash.no_update
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    
+    df = None
+    if button_id == 'btn-load-test-car':
+        try:
+             df = pd.read_csv('/var/www/html/CIGModels/backend/cigmodelsdjango/cigmodelsdjangoapp/bnclassify/carwithnames.data')
+             # Take last 20 rows
+             df = df.tail(20).copy()
+        except: return dash.no_update
+        
+    elif button_id == 'btn-load-test-asia':
+        try:
+             df = pd.read_csv('/var/www/html/CIGModels/backend/cigmodelsdjango/cigmodelsdjangoapp/bnclassify/asia.csv')
+             # Take last 20 rows
+             df = df.tail(20).copy()
+        except: return dash.no_update
+    
+    if df is not None:
+        csv_string = df.to_csv(index=False, encoding='utf-8')
+        csv_string = "data:text/csv;base64," + base64.b64encode(csv_string.encode('utf-8')).decode('utf-8')
+        return csv_string
+        
+    return dash.no_update
 
 # 3. Dynamic Parameter Visibility (Structure & Params)
 @app.callback(
@@ -1267,17 +1359,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
         try:
             if eval_metric == 'CV':
                 fixed = ('fixed' in dag_check)
-                acc = bnclassify.cv(current_model, df, k=eval_folds, dag=fixed)
-                # Extract value from R object (could be FloatVector or dict)
-                if isinstance(acc, dict):
-                    val = acc['accuracy']
-                else:
-                    val = acc
-                # Convert R FloatVector to Python float by accessing first element
-                try:
-                    val = float(val[0]) if hasattr(val, '__getitem__') else float(val)
-                except (TypeError, IndexError):
-                    val = float(val)
+                val = bnclassify.cv(current_model, df, k=eval_folds, dag=fixed)
                 return dbc.Alert(f"Cross-Validation Accuracy ({eval_folds} folds): {val:.4f}", color="info")
             
             elif eval_metric == 'AIC':
@@ -1309,15 +1391,21 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             X = test_df.drop(columns=[class_var], errors='ignore')
             probs = prob_check
             
+            # The wrapper now returns a DataFrame (if probs=True) or numpy array (if probs=False)
             preds = bnclassify.predict(current_model, X, prob=probs)
             
-            # Simple result display
+            # Result display
             if probs:
-                res_df = pd.DataFrame(preds) # simplified, assuming matrix return
-                msg = "Probabilities calculated."
+                # preds is a DataFrame of probabilities
+                res_df = preds.round(4)
+                # Add ID column if useful, or just index
+                res_df.reset_index(inplace=True)
+                msg = "Posterior probabilities calculated."
             else:
-                res_df = pd.DataFrame({'Class': preds})
-                msg = "Classes predicted."
+                # preds is a numpy array of classes
+                res_df = pd.DataFrame({'Predicted_Class': preds})
+                res_df.reset_index(inplace=True)
+                msg = "Class labels predicted."
             
             return html.Div([
                 dbc.Alert(msg, color="success"),
@@ -1344,45 +1432,118 @@ def update_inspection(active_tab, n_nav):
         return dbc.Alert("Train a model first to inspect it.", color="warning")
     
     if active_tab == "tab-summary":
-        return html.Pre(str(current_model))
+        try:
+            # Gather summary stats
+            n_p = bnclassify.nparams(current_model)
+            n_a = bnclassify.narcs(current_model)
+            c_v = bnclassify.class_var(current_model)
+            feats = bnclassify.features(current_model)
+            ms = bnclassify.modelstring(current_model)
+            
+            summary = html.Div([
+                html.H5("Model Summary"),
+                html.Ul([
+                    html.Li([html.Strong("Class Variable: "), c_v]),
+                    html.Li([html.Strong("Features (Nodes): "), ", ".join(feats)]),
+                    html.Li([html.Strong("Number of Parameters: "), str(n_p)]),
+                    html.Li([html.Strong("Number of Arcs: "), str(n_a)]),
+                    html.Li([html.Strong("Model String: "), html.Code(ms)]),
+                ])
+            ])
+            return summary
+        except Exception as e:
+            return dbc.Alert(f"Error generating summary: {e}", color="danger")
     
     if active_tab == "tab-cpts":
-        # Rough dump of CPT methods
         try:
-            # Depending on wrapper implementation
-            return html.Pre(str(current_model.params)) 
-        except:
-             return html.Div("CPTs not directly accessible via string.")
+            # Fetch CPTs dict
+            cpts_dict = bnclassify.params(current_model)
+            if 'error' in cpts_dict:
+                return dbc.Alert(f"Error fetching parameters: {cpts_dict['error']}", color="danger")
+            
+            tabs = []
+            for var_name, df_cpt in cpts_dict.items():
+                # Each CPT is a dataframe. Display properly.
+                # Usually it has columns for parents and probabilities.
+                cpt_table = dash_table.DataTable(
+                    columns=[{"name": str(c), "id": str(c)} for c in df_cpt.columns],
+                    data=df_cpt.to_dict('records'),
+                    style_table={'overflowX': 'auto', 'maxWidth': '100%'},
+                    page_size=10,
+                    style_header={'fontWeight': 'bold'}
+                )
+                
+                tabs.append(dbc.AccordionItem(
+                    cpt_table,
+                    title=f"CPT: {var_name}"
+                ))
+            
+            return dbc.Accordion(tabs, start_collapsed=True, always_open=False)
+            
+        except Exception as e:
+             return dbc.Alert(f"CPT Inspection Error: {e}", color="danger")
 
     if active_tab == "tab-graph":
         # Graph visualization
         try:
             import dash_cytoscape as cy
-            # We need edges. Assuming current_model has an edges() method or property
-            edges = []
-            if hasattr(current_model, 'edges'):
-                edges = current_model.edges # might be a list of lists or tuples
-                if callable(edges): edges = edges()
             
-            # If edges is None or empty, handle
-            if not edges: return dbc.Alert("No edges to plot.", color="info")
+            edges = bnclassify.edges(current_model)
+            class_v = bnclassify.class_var(current_model)
+            
+            if not edges: 
+                # Even if no edges, show nodes (like Naive Bayes with independent features?? NB has edges from Class->Features)
+                # If truly empty, it's just main nodes?
+                # Actually bnclassify edges() returns all edges. For NB it should return edges.
+                pass
             
             elements = []
             nodes = set()
-            for u, v in edges:
-                nodes.add(u); nodes.add(v)
-                elements.append({'data': {'source': u, 'target': v}})
+            
+            # Add edges
+            if edges:
+                for u, v in edges:
+                    nodes.add(u); nodes.add(v)
+                    elements.append({'data': {'source': u, 'target': v}})
+            
+            # If no edges, we might still have features? 
+            # But edges() usually captures the structure.
+            
+            # Add nodes with class distinction
             for n in nodes:
-                elements.append({'data': {'id': n, 'label': n}})
-                
+                is_class = (n == class_v)
+                elements.append({
+                    'data': {'id': n, 'label': n},
+                    'classes': 'class_node' if is_class else ''
+                })
+            
+            return cy.Cytoscape(
+                id='structure-graph',
+                elements=elements,
+                stylesheet=cytoscape_stylesheet,
+                style={'width': '100%', 'height': '600px', 'border': '1px solid #ddd', 'backgroundColor': '#ffffff'},
+                layout={
+                    'name': 'cose',
+                    'animate': True,
+                    'animationDuration': 500,
+                    'nodeRepulsion': 8000,
+                    'idealEdgeLength': 100,
+                    'edgeElasticity': 100,
+                    'nestingFactor': 5,
+                    'gravity': 80,
+                    'numIter': 1000,
+                    'randomize': False
+                },
+                responsive=True
+            )
             return cy.Cytoscape(
                 id='cytoscape',
                 elements=elements,
-                layout={'name': 'breadthfirst'},
-                style={'width': '100%', 'height': '600px'},
+                layout={'name': 'breadthfirst', 'roots': [bnclassify.class_var(current_model)]},
+                style={'width': '100%', 'height': '600px', 'border': '1px solid #ddd'},
                 stylesheet=[
-                    {'selector': 'node', 'style': {'label': 'data(label)', 'background-color': '#007bff'}},
-                    {'selector': 'edge', 'style': {'line-color': '#ccc', 'target-arrow-shape': 'triangle'}}
+                    {'selector': 'node', 'style': {'label': 'data(label)', 'background-color': '#0d6efd', 'color': 'white', 'text-valign': 'center'}},
+                    {'selector': 'edge', 'style': {'line-color': '#ccc', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#ccc', 'curve-style': 'bezier'}}
                 ]
             )
         except ImportError:
