@@ -484,10 +484,12 @@ predict_section = html.Div(id="section-predict", style={"display": "none"}, chil
         },
         multiple=False
     ),
-    html.Div([
-        html.Small("Or use the default 'Asia' test set:", className="text-muted me-2"),
-        dbc.Button("Load Test Data (Asia)", id="btn-load-test-asia", color="secondary", size="sm", outline=True)
-    ], className="mt-2 mb-3"),
+    dbc.Checkbox(
+        id='use-default-predict',
+        label=" Use default 'Asia' test data",
+        value=False,
+        className="mb-3"
+    ),
     
     dbc.Alert([
         html.I(className="fas fa-info-circle me-2"),
@@ -995,38 +997,7 @@ def load_and_preview_data(upload_contents, use_default, upload_filename):
     
     return dash.no_update, dash.no_update, dash.no_update, dash.no_update, ""
 
-@app.callback(
-    Output('upload-predict', 'contents'),
-    [Input('btn-load-test-car', 'n_clicks'),
-     Input('btn-load-test-asia', 'n_clicks')],
-    prevent_initial_call=True
-)
-def load_test_data(n_car, n_asia):
-    ctx = callback_context
-    if not ctx.triggered: return dash.no_update
-    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    
-    df = None
-    if button_id == 'btn-load-test-car':
-        try:
-             df = pd.read_csv('/var/www/html/CIGModels/backend/cigmodelsdjango/cigmodelsdjangoapp/bnclassify/carwithnames.data')
-             # Take last 20 rows
-             df = df.tail(20).copy()
-        except: return dash.no_update
-        
-    elif button_id == 'btn-load-test-asia':
-        try:
-             df = pd.read_csv('/var/www/html/CIGModels/backend/cigmodelsdjango/cigmodelsdjangoapp/bnclassify/asia.csv')
-             # Take last 20 rows
-             df = df.tail(20).copy()
-        except: return dash.no_update
-    
-    if df is not None:
-        csv_string = df.to_csv(index=False, encoding='utf-8')
-        csv_string = "data:text/csv;base64," + base64.b64encode(csv_string.encode('utf-8')).decode('utf-8')
-        return csv_string
-        
-    return dash.no_update
+
 
 # 3. Dynamic Parameter Visibility (Structure & Params)
 @app.callback(
@@ -1100,14 +1071,15 @@ def update_eval_fields(val):
      # Eval params
      State('eval-metric', 'value'), State('eval-folds-input', 'value'), State('dag-check', 'value'),
      # Predict params
-     State('upload-predict', 'contents'), State('prob-check', 'value')]
+     State('upload-predict', 'contents'), State('prob-check', 'value'),
+     State('use-default-predict', 'value')]
 )
 def execute_action(n_struc, n_param, n_both, n_eval, n_pred, 
                   df_json, class_var,
                   struct_method, score, root, eps, kdbk, s_folds,
                   param_method, alpha, trees, prior,
                   eval_metric, eval_folds, dag_check,
-                  pred_contents, prob_check):
+                  pred_contents, prob_check, use_default_predict):
     
     ctx = callback_context
     if not ctx.triggered: return ""
@@ -1383,11 +1355,24 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
     # --- PREDICT ---
     if trigger == 'btn-predict':
         if current_model is None: return dbc.Alert("No model trained!", color="warning")
-        if not pred_contents: return dbc.Alert("Upload prediction data first.", color="warning")
         
         try:
-            _, content_string = pred_contents.split(',', 1)
-            test_df = pd.read_csv(StringIO(base64.b64decode(content_string).decode('utf-8')))
+            test_df = None
+            msg_src = ""
+            
+            if use_default_predict:
+                # Load default 'Asia' data
+                # Using absolute path as in the other callback
+                test_df = pd.read_csv('/var/www/html/CIGModels/backend/cigmodelsdjango/cigmodelsdjangoapp/bnclassify/asia.csv')
+                test_df = test_df.tail(20).copy() # Use a subset as "test" data
+                msg_src = "default 'Asia' test data"
+            elif pred_contents:
+                _, content_string = pred_contents.split(',', 1)
+                test_df = pd.read_csv(StringIO(base64.b64decode(content_string).decode('utf-8')))
+                msg_src = "uploaded file"
+            else:
+                 return dbc.Alert("Please upload data or select default test data.", color="warning")
+            
             X = test_df.drop(columns=[class_var], errors='ignore')
             probs = prob_check
             
