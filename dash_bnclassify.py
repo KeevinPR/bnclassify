@@ -162,7 +162,8 @@ data_section = html.Div(id="section-data", children=[
                 ),
             ], className="fw-bold"),
             dcc.Dropdown(id='class-dropdown', placeholder="Select class column", clearable=False, style={'position': 'relative', 'zIndex': '9999'}),
-        ])
+        ]),
+        style={"zIndex": 1002, "position": "relative"}
     ),
 
     html.Br(),
