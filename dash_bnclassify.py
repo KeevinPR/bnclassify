@@ -9,6 +9,15 @@ import dash_bootstrap_components as dbc
 
 # Import the bnclassify wrapper
 import bnclassify
+try:
+    import dash_cytoscape as cy
+except ImportError:
+    cy = None # Handle gracefully or let it fail depending on preference. 
+              # Better to fail fast or show alert. 
+              # Given the user reported freeze, let's keep it global but maybe not crash immediately if we want to show a nice error in UI.
+              # BUT, the freeze happens precisely because the exception inside callback is messy.
+              # Let's import it. If it fails, the app logs will show it on startup.
+    pass 
 
 # ---------- (1) CREATE DASH APP ---------- #
 app = dash.Dash(
@@ -501,7 +510,8 @@ predict_section = html.Div(id="section-predict", style={"display": "none"}, chil
     html.Br(),
     dbc.Checkbox(id='prob-check', label=" Output Posterior Probabilities", value=False),
     html.Br(),
-    dbc.Button("Run Prediction", id="btn-predict", color="success", size="lg"),
+    dbc.Button("Run Prediction", id="btn-predict", color="success", size="lg", className="me-2"),
+    dbc.Button([html.I(className="fas fa-download me-2"), "Download Results"], id="btn-download-pred", color="secondary", size="lg", disabled=True),
     
     html.Br(), html.Br(),
     html.Div(id="prediction-results")
@@ -517,6 +527,10 @@ inspect_section = html.Div(id="section-inspect", style={"display": "none"}, chil
         dbc.Tab(label="Model Summary", tab_id="tab-summary"),
         dbc.Tab(label="CPTs", tab_id="tab-cpts"),
     ], id="inspect-tabs", active_tab="tab-graph"),
+    html.Br(),
+    html.Div(id="inspect-toolbar", children=[
+         dbc.Button([html.I(className="fas fa-file-csv me-2"), "Export CPTs to CSV"], id="btn-download-cpts", color="outline-primary", size="sm", className="mb-3")
+    ], style={"display": "none"}),
     html.Br(),
     
     html.Div(id="inspect-content")
@@ -544,8 +558,11 @@ content = html.Div(id="page-content", style=CONTENT_STYLE, children=[
 
 app.layout = html.Div([
     dcc.Store(id='dataset-store'), 
+    dcc.Store(id='prediction-results-store'),
     dcc.Store(id='active-section-store', data='data'),
     dcc.Store(id='model-state-store'),  # Store model state
+    dcc.Download(id="download-predictions"),
+    dcc.Download(id="download-cpts"),
     dcc.Interval(id='interval-component', interval=2000, n_intervals=0),  # Update every 2 seconds
     sidebar,
     content,
@@ -1056,7 +1073,8 @@ def update_eval_fields(val):
 
 # 4. MAIN EXECUTION CALLBACK (Handling Button Clicks)
 @app.callback(
-    Output('output-area', 'children'),
+    [Output('output-area', 'children'),
+     Output('prediction-results-store', 'data')],
     [Input('btn-train-structure', 'n_clicks'),
      Input('btn-learn-params', 'n_clicks'),
      Input('btn-train-both', 'n_clicks'),
@@ -1083,10 +1101,10 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                   pred_contents, prob_check, use_default_predict):
     
     ctx = callback_context
-    if not ctx.triggered: return ""
+    if not ctx.triggered: return "", dash.no_update
     trigger = ctx.triggered[0]['prop_id'].split('.')[0]
     
-    if not df_json: return dbc.Alert("No dataset loaded!", color="warning")
+    if not df_json: return dbc.Alert("No dataset loaded!", color="warning"), dash.no_update
     
     global current_model, current_structure_algorithm, current_params_learned
     df = pd.read_json(df_json, orient='split')
@@ -1105,7 +1123,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                     html.Li("Change structure algorithm to 'Naive Bayes (NB)', or"),
                     html.Li("Change parameter method to MLE, Bayes, WANBIA, or AWNB")
                 ])
-            ], color="danger")
+            ], color="danger"), dash.no_update
         
         try:
             # First: Train Structure
@@ -1124,7 +1142,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             elif struct_method == 'BSEJ':    
                 model = bnclassify.bsej(class_var, df, k=s_folds, epsilon=eps, smooth=0)
             else: 
-                return dbc.Alert("Unknown Algorithm", color="danger")
+                return dbc.Alert("Unknown Algorithm", color="danger"), dash.no_update
             
             current_model = model
             current_structure_algorithm = struct_method
@@ -1192,13 +1210,13 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                         "Model is fully trained and ready! Go to 'Evaluation' to assess performance, 'Prediction' to classify new data, or 'Inspect Model' to examine the learned network."
                     ], className="mb-0 small")
                 ], color="success")
-            ])
+            ]), dash.no_update
             
         except Exception as e:
             return dbc.Alert([
                 html.H5([html.I(className="fas fa-times-circle me-2"), "Training Failed"], className="alert-heading"),
                 html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
-            ], color="danger")
+            ], color="danger"), dash.no_update
     
     # --- TRAIN STRUCTURE ---
     if trigger == 'btn-train-structure':
@@ -1218,7 +1236,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             elif struct_method == 'BSEJ':    
                 model = bnclassify.bsej(class_var, df, k=s_folds, epsilon=eps, smooth=0)
             else: 
-                return dbc.Alert("Unknown Algorithm", color="danger")
+                return dbc.Alert("Unknown Algorithm", color="danger"), dash.no_update
             
             current_model = model
             current_structure_algorithm = struct_method
@@ -1247,17 +1265,17 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                         "Go to 'Parameter Learning' to estimate the conditional probability tables (CPTs), or go to 'Inspect Model' to see the structure."
                     ], className="mb-0 small")
                 ], color="success")
-            ])
+            ]), dash.no_update # No prediction data for training
         except Exception as e:
              return dbc.Alert([
                  html.H5([html.I(className="fas fa-times-circle me-2"), f"Structure Learning Failed: {struct_method}"], className="alert-heading"),
                  html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
-             ], color="danger")
+             ], color="danger"), dash.no_update
 
     # --- LEARN PARAMETERS ---
     if trigger == 'btn-learn-params':
         if current_model is None: 
-            return dbc.Alert("⚠ No structure! Learn structure first.", color="warning")
+            return dbc.Alert("⚠ No structure! Learn structure first.", color="warning"), dash.no_update
         
         # Validate MANB restriction: only works with Naive Bayes structures
         if param_method == 'MANB' and current_structure_algorithm != 'NB':
@@ -1266,7 +1284,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                 html.Strong("MANB Restriction: "),
                 f"MANB can only be applied to Naive Bayes structures. Current structure: {current_structure_algorithm}. ",
                 "Please use a different parameter learning method or re-train with Naive Bayes structure."
-            ], color="danger")
+            ], color="danger"), dash.no_update
         
         try:
             if   param_method == 'MLE':    
@@ -1324,38 +1342,39 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             return dbc.Alert([
                 html.H5([html.I(className="fas fa-times-circle me-2"), f"Parameter Learning Failed: {param_method}"], className="alert-heading"),
                 html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
-            ], color="danger")
+            ], color="danger"), dash.no_update
             
     # --- EVALUATE ---
     if trigger == 'btn-evaluate':
-        if current_model is None: return dbc.Alert("Model not ready for evaluation.", color="warning")
+        if current_model is None: return dbc.Alert("Model not ready for evaluation.", color="warning"), dash.no_update
         try:
             if eval_metric == 'CV':
                 fixed = ('fixed' in dag_check)
                 val = bnclassify.cv(current_model, df, k=eval_folds, dag=fixed)
-                return dbc.Alert(f"Cross-Validation Accuracy ({eval_folds} folds): {val:.4f}", color="info")
+                return dbc.Alert(f"Cross-Validation Accuracy ({eval_folds} folds): {val:.4f}", color="info"), dash.no_update
             
             elif eval_metric == 'AIC':
                 # Wrapper already handles conversion to float
                 aic_val = bnclassify.aic(current_model, df)
-                return dbc.Alert(f"AIC Score: {aic_val:.4f}", color="info")
+                return dbc.Alert(f"AIC Score: {aic_val:.4f}", color="info"), dash.no_update
             
             elif eval_metric == 'BIC':
                 # Wrapper already handles conversion to float
                 bic_val = bnclassify.bic(current_model, df)
-                return dbc.Alert(f"BIC Score: {bic_val:.4f}", color="info")
+                return dbc.Alert(f"BIC Score: {bic_val:.4f}", color="info"), dash.no_update
             
             elif eval_metric == 'LL':
                 # Wrapper already handles conversion to float
                 ll_val = bnclassify.log_lik(current_model, df)
-                return dbc.Alert(f"Log-Likelihood: {ll_val:.4f}", color="info")
+                return dbc.Alert(f"Log-Likelihood: {ll_val:.4f}", color="info"), dash.no_update
             
         except Exception as e:
-            return dbc.Alert(f"Evaluation Failed: {e}", color="danger")
+            return dbc.Alert(f"Evaluation Failed: {e}", color="danger"), dash.no_update
+
 
     # --- PREDICT ---
     if trigger == 'btn-predict':
-        if current_model is None: return dbc.Alert("No model trained!", color="warning")
+        if current_model is None: return dbc.Alert("No model trained!", color="warning"), dash.no_update
         
         try:
             test_df = None
@@ -1372,7 +1391,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                 test_df = pd.read_csv(StringIO(base64.b64decode(content_string).decode('utf-8')))
                 msg_src = "uploaded file"
             else:
-                 return dbc.Alert("Please upload data or select default test data.", color="warning")
+                 return dbc.Alert("Please upload data or select default test data.", color="warning"), dash.no_update
             
             X = test_df.drop(columns=[class_var], errors='ignore')
             probs = prob_check
@@ -1384,13 +1403,16 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             if probs:
                 # preds is a DataFrame of probabilities
                 res_df = preds.round(4)
-                # Add ID column if useful, or just index
+                # Ensure we have an ID column
                 res_df.reset_index(inplace=True)
+                res_df.rename(columns={'index': 'Row ID'}, inplace=True)
                 msg = "Posterior probabilities calculated."
             else:
                 # preds is a numpy array of classes
-                res_df = pd.DataFrame({'Predicted_Class': preds})
-                res_df.reset_index(inplace=True)
+                # Check if it's an array of indices or labels
+                # If they are indices, we might want to map them if we knew the levels.
+                # But bnclassify generally returns factors (labels).
+                res_df = pd.DataFrame({'Row ID': range(len(preds)), 'Predicted Class': preds})
                 msg = "Class labels predicted."
             
             return html.Div([
@@ -1398,24 +1420,29 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                 dash_table.DataTable(
                     data=res_df.head(10).to_dict('records'), 
                     columns=[{'name': str(c), 'id': str(c)} for c in res_df.columns],
-                    page_size=10
+                    page_size=10,
+                    style_table={'overflowX': 'auto'},
+                    style_header={'fontWeight': 'bold', 'backgroundColor': '#f8f9fa'},
+                    style_cell={'textAlign': 'center'}
                 )
-            ])
+            ]), res_df.to_json(orient='split', date_format='iso')
             
         except Exception as e:
-            return dbc.Alert(f"Prediction Failed: {e}", color="danger")
+            return dbc.Alert(f"Prediction Failed: {e}", color="danger"), dash.no_update
             
-    return dash.no_update
+    return dash.no_update, dash.no_update
+
 
 # 5. INSPECTION CALLBACK
 @app.callback(
-    Output("inspect-content", "children"),
+    [Output("inspect-content", "children"),
+     Output("inspect-toolbar", "style")],
     [Input("inspect-tabs", "active_tab"), Input("nav-inspect", "n_clicks")],
 )
 def update_inspection(active_tab, n_nav):
     # Only update if we have a model
     if current_model is None:
-        return dbc.Alert("Train a model first to inspect it.", color="warning")
+        return dbc.Alert("Train a model first to inspect it.", color="warning"), {'display': 'none'}
     
     if active_tab == "tab-summary":
         try:
@@ -1436,66 +1463,90 @@ def update_inspection(active_tab, n_nav):
                     html.Li([html.Strong("Model String: "), html.Code(ms)]),
                 ])
             ])
-            return summary
+            return summary, {'display': 'none'}
         except Exception as e:
-            return dbc.Alert(f"Error generating summary: {e}", color="danger")
+            return dbc.Alert(f"Error generating summary: {e}", color="danger"), {'display': 'none'}
     
     if active_tab == "tab-cpts":
         try:
             # Fetch CPTs dict
             cpts_dict = bnclassify.params(current_model)
             if 'error' in cpts_dict:
-                return dbc.Alert(f"Error fetching parameters: {cpts_dict['error']}", color="danger")
+                return dbc.Alert(f"Error fetching parameters: {cpts_dict['error']}", color="danger"), {'display': 'none'}
             
             tabs = []
             for var_name, df_cpt in cpts_dict.items():
-                # Each CPT is a dataframe. Display properly.
-                # Usually it has columns for parents and probabilities.
-                cpt_table = dash_table.DataTable(
-                    columns=[{"name": str(c), "id": str(c)} for c in df_cpt.columns],
-                    data=df_cpt.to_dict('records'),
-                    style_table={'overflowX': 'auto', 'maxWidth': '100%'},
-                    page_size=10,
-                    style_header={'fontWeight': 'bold'}
-                )
+                cols = df_cpt.columns.tolist()
+                val_col = 'Freq' if 'Freq' in cols else cols[-1]
                 
+                # Heuristic: Pivot if 3 cols (e.g. Child, Parent, Freq)
+                if len(cols) == 3 and pd.api.types.is_numeric_dtype(df_cpt[val_col]):
+                    try:
+                        child = cols[0]
+                        parent = cols[1]
+                        df_pivot = df_cpt.pivot(index=child, columns=parent, values=val_col).reset_index()
+                        df_pivot = df_pivot.round(4)
+                        cpt_table = dash_table.DataTable(
+                            columns=[{"name": str(c), "id": str(c)} for c in df_pivot.columns],
+                            data=df_pivot.to_dict('records'),
+                            style_table={'overflowX': 'auto', 'maxWidth': '100%'},
+                            page_size=10,
+                            style_header={'fontWeight': 'bold', 'backgroundColor': '#f8f9fa'},
+                            style_cell={'textAlign': 'center'}
+                        )
+                        msg = html.Small(f"CPT Table (P({child} | {parent}))", className="text-muted mb-2 d-block")
+                    except:
+                        cpt_table = dash_table.DataTable(
+                            columns=[{"name": str(c), "id": str(c)} for c in df_cpt.columns],
+                            data=df_cpt.to_dict('records'),
+                            style_table={'overflowX': 'auto', 'maxWidth': '100%'},
+                            page_size=10
+                        )
+                        msg = ""
+                else:
+                    cpt_table = dash_table.DataTable(
+                        columns=[{"name": str(c), "id": str(c)} for c in df_cpt.columns],
+                        data=df_cpt.to_dict('records'),
+                        style_table={'overflowX': 'auto', 'maxWidth': '100%'},
+                        page_size=10
+                    )
+                    msg = ""
+
                 tabs.append(dbc.AccordionItem(
-                    cpt_table,
+                    [msg, cpt_table],
                     title=f"CPT: {var_name}"
                 ))
             
-            return dbc.Accordion(tabs, start_collapsed=True, always_open=False)
+            return dbc.Accordion(tabs, start_collapsed=True, always_open=False), {'display': 'block'}
             
         except Exception as e:
-             return dbc.Alert(f"CPT Inspection Error: {e}", color="danger")
+             return dbc.Alert(f"CPT Inspection Error: {e}", color="danger"), {'display': 'none'}
 
     if active_tab == "tab-graph":
         # Graph visualization
         try:
-            import dash_cytoscape as cy
-            
+            if cy is None:
+                 return dbc.Alert("dash_cytoscape not installed. Please install it to view the graph.", color="danger"), {'display': 'none'}
+
             edges = bnclassify.edges(current_model)
             class_v = bnclassify.class_var(current_model)
-            
-            if not edges: 
-                # Even if no edges, show nodes (like Naive Bayes with independent features?? NB has edges from Class->Features)
-                # If truly empty, it's just main nodes?
-                # Actually bnclassify edges() returns all edges. For NB it should return edges.
-                pass
             
             elements = []
             nodes = set()
             
-            # Add edges
             if edges:
                 for u, v in edges:
                     nodes.add(u); nodes.add(v)
                     elements.append({'data': {'source': u, 'target': v}})
             
-            # If no edges, we might still have features? 
-            # But edges() usually captures the structure.
-            
-            # Add nodes with class distinction
+            if not nodes and current_model:
+                # NB might have no edges if only class? NB usually has edges Class -> Feature.
+                # Assuming edges function handles it.
+                # Fallback to feature list if nodes empty
+                 feats = bnclassify.features(current_model)
+                 nodes.update(feats)
+                 nodes.add(class_v)
+
             for n in nodes:
                 is_class = (n == class_v)
                 elements.append({
@@ -1503,41 +1554,63 @@ def update_inspection(active_tab, n_nav):
                     'classes': 'class_node' if is_class else ''
                 })
             
-            return cy.Cytoscape(
+            graph = cy.Cytoscape(
                 id='structure-graph',
                 elements=elements,
                 stylesheet=cytoscape_stylesheet,
                 style={'width': '100%', 'height': '600px', 'border': '1px solid #ddd', 'backgroundColor': '#ffffff'},
-                layout={
-                    'name': 'cose',
-                    'animate': True,
-                    'animationDuration': 500,
-                    'nodeRepulsion': 8000,
-                    'idealEdgeLength': 100,
-                    'edgeElasticity': 100,
-                    'nestingFactor': 5,
-                    'gravity': 80,
-                    'numIter': 1000,
-                    'randomize': False
-                },
+                layout={'name': 'cose', 'animate': True},
                 responsive=True
             )
-            return cy.Cytoscape(
-                id='cytoscape',
-                elements=elements,
-                layout={'name': 'breadthfirst', 'roots': [bnclassify.class_var(current_model)]},
-                style={'width': '100%', 'height': '600px', 'border': '1px solid #ddd'},
-                stylesheet=[
-                    {'selector': 'node', 'style': {'label': 'data(label)', 'background-color': '#0d6efd', 'color': 'white', 'text-valign': 'center'}},
-                    {'selector': 'edge', 'style': {'line-color': '#ccc', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#ccc', 'curve-style': 'bezier'}}
-                ]
-            )
-        except ImportError:
-             return dbc.Alert("dash_cytoscape not installed", color="danger")
+            return graph, {'display': 'none'}
         except Exception as e:
-             return dbc.Alert(f"Plotting error: {e}", color="danger")
+             return dbc.Alert(f"Plotting error: {e}", color="danger"), {'display': 'none'}
     
-    return html.Div("Select a tab")
+    return html.Div("Select a tab method"), {'display': 'none'}
+
+
+# 5b. DOWNLOAD CALLBACKS
+@app.callback(
+    Output("btn-download-pred", "disabled"),
+    Input("prediction-results-store", "data")
+)
+def toggle_download_btn(data):
+    return (data is None)
+
+@app.callback(
+    Output("download-predictions", "data"),
+    Input("btn-download-pred", "n_clicks"),
+    State("prediction-results-store", "data"),
+    prevent_initial_call=True
+)
+def download_predictions(n, data):
+    if not n or not data: return dash.no_update
+    df = pd.read_json(data, orient='split')
+    return dcc.send_data_frame(df.to_csv, "predictions.csv")
+
+@app.callback(
+    Output("download-cpts", "data"),
+    Input("btn-download-cpts", "n_clicks"),
+    prevent_initial_call=True
+)
+def download_cpts(n):
+    if not n or current_model is None: return dash.no_update
+    try:
+        cpts = bnclassify.params(current_model)
+        # Create a single CSV with a 'Variable' column
+        dfs = []
+        for var, df in cpts.items():
+            df['Variable'] = var
+            dfs.append(df)
+        
+        final_df = pd.concat(dfs, ignore_index=True)
+        # Reorder to put Variable first
+        cols = ['Variable'] + [c for c in final_df.columns if c != 'Variable']
+        final_df = final_df[cols]
+        
+        return dcc.send_data_frame(final_df.to_csv, "model_cpts.csv")
+    except Exception as e:
+        return dash.no_update # Handle error gracefully or show alert (requires outputting alert)
 
 
 # 6. MODEL STATE INFO CALLBACK
