@@ -182,220 +182,166 @@ data_section = html.Div(id="section-data", children=[
 # --- 2. COMBINED STRUCTURE & PARAMETER LEARNING SECTION ---
 structure_section = html.Div(id="section-structure", style={"display": "none"}, children=[
     html.H2("Structure & Parameter Learning"),
-    html.P("Configure both structure and parameters for your Bayesian Network Classifier. Both are interconnected and can be trained together."),
+    html.P("Configure both structure and parameters for your Bayesian Network Classifier."),
     dbc.Alert([
         html.I(className="fas fa-lightbulb me-2"),
         html.Strong("Scientific Note: "),
-        "Structure and parameter learning are coexistent processes. The structure defines the dependencies, while parameters quantify them. Configure both aspects below."
+        "Structure and parameter learning are coexistent processes. Configure both and train together or separately."
     ], color="info", className="small"),
     html.Hr(),
     
-    # === STRUCTURE LEARNING SECTION ===
-    html.H4([html.I(className="fas fa-project-diagram me-2"), "Structure Learning"]),
+    # === STRUCTURE LEARNING - COMPACT DESIGN ===
     dbc.Row([
         dbc.Col([
+            html.H5([html.I(className="fas fa-project-diagram me-2"), "Structure Learning"], className="mb-3"),
             html.Div([
-                dbc.Label("Algorithm Family", style={'display': 'inline-block', 'marginRight': '5px'}),
-                dbc.Button(
-                    html.I(className="fas fa-question-circle"),
-                    id="help-button-algorithms",
-                    color="link",
-                    style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
-                ),
-            ]),
-            dcc.Dropdown(
-                id='structure-method',
-                options=[
-                    {'label': 'Naive Bayes (NB)', 'value': 'NB'},
-                    {'label': 'TAN (Chow-Liu) [Standard]', 'value': 'TAN_CL'},
-                    {'label': 'TAN (Hill-Climbing)', 'value': 'TAN_HC'},
-                    {'label': 'AODE (Ensemble)', 'value': 'AODE'},
-                    {'label': 'KDB (k-Dependence)', 'value': 'KDB'},
-                    {'label': 'FSSJ (Forward Selection)', 'value': 'FSSJ'},
-                    {'label': 'BSEJ (Backward Elimination)', 'value': 'BSEJ'},
-                ],
-                value='NB',
-                clearable=False
-            ),
-        ], width=6),
-    ], className="mb-3"),
-    
-    # Structure Algorithm Parameters Card
-    dbc.Card([
-        dbc.CardHeader("Structure Algorithm Parameters"),
-        dbc.CardBody([
-            # TAN_CL - Score & Root (first row)
-            dbc.Row([
-                dbc.Col([
-                    html.Div([
-                        dbc.Label("Score Metric", style={'display': 'inline-block', 'marginRight': '5px'}),
-                        dbc.Button(
-                            html.I(className="fas fa-question-circle"),
-                            id="help-button-score",
-                            color="link",
-                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
-                        ),
-                    ], id="lbl-score"),
-                    dcc.Dropdown(
-                        id='score-dropdown',
-                        options=[
-                            {'label': 'AIC', 'value': 'AIC'},
-                            {'label': 'BIC', 'value': 'BIC'},
-                            {'label': 'Log-Likelihood', 'value': 'LL'}
-                        ],
-                        value='AIC', clearable=False
+                dbc.Label([
+                    "Algorithm Family", 
+                    dbc.Button(
+                        html.I(className="fas fa-question-circle"),
+                        id="help-button-algorithms",
+                        color="link",
+                        size="sm",
+                        style={"padding": "0", "marginLeft": "5px"}
                     )
-                ], width=4, id="field-score", style={"display": "none"}),
-                
-                # TAN_CL - Root
-                dbc.Col([
-                    html.Div([
-                        dbc.Label("Root Node", style={'display': 'inline-block', 'marginRight': '5px'}),
-                        dbc.Button(
-                            html.I(className="fas fa-question-circle"),
-                            id="help-button-root",
-                            color="link",
-                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
-                        ),
-                    ], id="lbl-root"),
-                    dcc.Dropdown(id='root-dropdown', placeholder="Auto", clearable=True)
-                ], width=4, id="field-root", style={"display": "none"}),
-            ]),
-            
-            # Wrapper Algorithms - CV Folds & Epsilon (second row)
-            dbc.Row([
-                dbc.Col([
-                   html.Div([
-                        dbc.Label("CV Folds", style={'display': 'inline-block', 'marginRight': '5px'}),
-                        dbc.Button(
-                            html.I(className="fas fa-question-circle"),
-                            id="help-button-folds",
-                            color="link",
-                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
-                        ),
-                    ], id="lbl-folds"),
-                   dbc.Input(id='struct-folds-input', type='number', value=5, min=2, step=1)
-                ], width=4, id="field-folds", style={"display": "none"}),
-                
-                dbc.Col([
-                    html.Div([
-                        dbc.Label("Epsilon", style={'display': 'inline-block', 'marginRight': '5px'}),
-                        dbc.Button(
-                            html.I(className="fas fa-question-circle"),
-                            id="help-button-epsilon",
-                            color="link",
-                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
-                        ),
-                    ], id="lbl-eps"),
-                    dbc.Input(id='epsilon-input', type='number', value=0.01, step=0.001, min=0)
-                ], width=4, id="field-epsilon", style={"display": "none"}),
-                
-                # KDB - kdbk (Max Parents per Feature)
-                dbc.Col([
-                    html.Div([
-                        dbc.Label("k (Max Parents)", style={'display': 'inline-block', 'marginRight': '5px'}),
-                        dbc.Button(
-                            html.I(className="fas fa-question-circle"),
-                            id="help-button-k",
-                            color="link",
-                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
-                        ),
-                    ], id="lbl-kdbk"),
-                    dbc.Input(id='kdbk-input', type='number', value=2, min=1, step=1)
-                ], width=4, id="field-kdbk", style={"display": "none"}),
-            ], className="mt-2"),
-        ])
-    ]),
-    
-    html.H4([html.I(className="fas fa-sliders-h me-2"), "Parameter Learning"], className="mt-4"),
-    html.Div(id="current-params-info", className="alert alert-info mb-3"),
-    
-    dbc.Row([
-        dbc.Col([
-            html.Div([
-                dbc.Label("Parameter Learning Method", style={'display': 'inline-block', 'marginRight': '5px'}),
-                dbc.Button(
-                    html.I(className="fas fa-question-circle"),
-                    id="help-button-methods",
-                    color="link",
-                    style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                ], className="fw-bold mb-2"),
+                dcc.Dropdown(
+                    id='structure-method',
+                    options=[
+                        {'label': 'Naive Bayes (NB)', 'value': 'NB'},
+                        {'label': 'TAN (Chow-Liu) [Standard]', 'value': 'TAN_CL'},
+                        {'label': 'TAN (Hill-Climbing)', 'value': 'TAN_HC'},
+                        {'label': 'AODE (Ensemble)', 'value': 'AODE'},
+                        {'label': 'KDB (k-Dependence)', 'value': 'KDB'},
+                        {'label': 'FSSJ (Forward Selection)', 'value': 'FSSJ'},
+                        {'label': 'BSEJ (Backward Elimination)', 'value': 'BSEJ'},
+                    ],
+                    value='NB',
+                    clearable=False
                 ),
             ]),
-            dcc.Dropdown(
-                id='param-method',
-                options=[
-                    {'label': 'Maximum Likelihood (MLE)', 'value': 'MLE'},
-                    {'label': 'Bayesian (Dirichlet Prior)', 'value': 'Bayes'},
-                    {'label': 'WANBIA (Feature Weighting)', 'value': 'WANBIA'},
-                    {'label': 'AWNB (Attribute Weighted)', 'value': 'AWNB'},
-                    {'label': 'MANB (Model Averaged)', 'value': 'MANB'}
-                ],
-                value='Bayes',
-                clearable=False
-            )
-        ], width=6),
-    ]),
-    html.Br(),
-    
-    dbc.Card([
-        dbc.CardHeader("Parameter Estimation Options"),
-        dbc.CardBody([
-            dbc.Row([
-            dbc.Col([
-                html.Div([
-                    dbc.Label("Smoothing Alpha", style={'display': 'inline-block', 'marginRight': '5px'}),
-                    dbc.Button(
-                        html.I(className="fas fa-question-circle"),
-                        id="help-button-alpha",
-                        color="link",
-                        style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
-                    ),
-                ], id="lbl-alpha"),
-                dbc.Input(id='alpha-input', type='number', value=0.5, step=0.1)
-            ], width=4, id="field-alpha"),
             
-            dbc.Col([
-                html.Div([
-                    dbc.Label("AWNB Trees", style={'display': 'inline-block', 'marginRight': '5px'}),
+            # Collapsible Structure Parameters using Accordion
+            dbc.Accordion([
+                dbc.AccordionItem([
+                    # TAN_CL parameters
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Label(["Score Metric ", dbc.Button(html.I(className="fas fa-question-circle"), id="help-button-score", color="link", size="sm", style={"padding": "0", "marginLeft": "3px"})], style={"fontSize": "0.9rem"}),
+                            dcc.Dropdown(
+                                id='score-dropdown',
+                                options=[
+                                    {'label': 'AIC', 'value': 'AIC'},
+                                    {'label': 'BIC', 'value': 'BIC'},
+                                    {'label': 'Log-Likelihood', 'value': 'LL'}
+                                ],
+                                value='AIC', clearable=False
+                            )
+                        ], width=6, id="field-score", style={"display": "none"}),
+                        
+                        dbc.Col([
+                            dbc.Label(["Root Node ", dbc.Button(html.I(className="fas fa-question-circle"), id="help-button-root", color="link", size="sm", style={"padding": "0", "marginLeft": "3px"})], style={"fontSize": "0.9rem"}),
+                            dcc.Dropdown(id='root-dropdown', placeholder="Auto", clearable=True)
+                        ], width=6, id="field-root", style={"display": "none"}),
+                    ]),
+                    
+                    # Wrapper algorithm parameters
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Label(["CV Folds ", dbc.Button(html.I(className="fas fa-question-circle"), id="help-button-folds", color="link", size="sm", style={"padding": "0", "marginLeft": "3px"})], style={"fontSize": "0.9rem"}),
+                            dbc.Input(id='struct-folds-input', type='number', value=5, min=2, step=1)
+                        ], width=4, id="field-folds", style={"display": "none"}),
+                        
+                        dbc.Col([
+                            dbc.Label(["Epsilon ", dbc.Button(html.I(className="fas fa-question-circle"), id="help-button-epsilon", color="link", size="sm", style={"padding": "0", "marginLeft": "3px"})], style={"fontSize": "0.9rem"}),
+                            dbc.Input(id='epsilon-input', type='number', value=0.01, step=0.001, min=0)
+                        ], width=4, id="field-epsilon", style={"display": "none"}),
+                        
+                        dbc.Col([
+                            dbc.Label(["k (Max Parents) ", dbc.Button(html.I(className="fas fa-question-circle"), id="help-button-k", color="link", size="sm", style={"padding": "0", "marginLeft": "3px"})], style={"fontSize": "0.9rem"}),
+                            dbc.Input(id='kdbk-input', type='number', value=2, min=1, step=1)
+                        ], width=4, id="field-kdbk", style={"display": "none"}),
+                    ], className="mt-3"),
+                ], title="Algorithm Parameters", item_id="struct-params")
+            ], id="structure-params-accordion", start_collapsed=True, className="mb-3"),
+            
+        ], width=6),
+        
+        # === PARAMETER LEARNING - COMPACT DESIGN ===
+        dbc.Col([
+            html.H5([html.I(className="fas fa-sliders-h me-2"), "Parameter Learning"], className="mb-3"),
+            html.Div(id="current-params-info", className="alert alert-info mb-3 py-2 px-3 small"),
+            
+            html.Div([
+                dbc.Label([
+                    "Method", 
                     dbc.Button(
                         html.I(className="fas fa-question-circle"),
-                        id="help-button-trees",
+                        id="help-button-methods",
                         color="link",
-                        style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
-                    ),
-                ], id="lbl-trees"),
-                dbc.Input(id='trees-input', type='number', value=10, min=1)
-            ], width=4, id="field-trees", style={"display": "none"}),
-             
-            dbc.Col([
-                html.Div([
-                    dbc.Label("MANB Prior", style={'display': 'inline-block', 'marginRight': '5px'}),
-                    dbc.Button(
-                        html.I(className="fas fa-question-circle"),
-                        id="help-button-prior",
-                        color="link",
-                        style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
-                    ),
-                ], id="lbl-prior"),
-                dbc.Input(id='prior-input', type='number', value=0.5, step=0.1)
-            ], width=4, id="field-prior", style={"display": "none"}),
-            ])
-        ])
-    ]),
+                        size="sm",
+                        style={"padding": "0", "marginLeft": "5px"}
+                    )
+                ], className="fw-bold mb-2"),
+                dcc.Dropdown(
+                    id='param-method',
+                    options=[
+                        {'label': 'Maximum Likelihood (MLE)', 'value': 'MLE'},
+                        {'label': 'Bayesian (Dirichlet Prior)', 'value': 'Bayes'},
+                        {'label': 'WANBIA (Feature Weighting)', 'value': 'WANBIA'},
+                        {'label': 'AWNB (Attribute Weighted)', 'value': 'AWNB'},
+                        {'label': 'MANB (Model Averaged)', 'value': 'MANB'}
+                    ],
+                    value='Bayes',
+                    clearable=False
+                ),
+            ]),
+            
+            # Collapsible Parameter Options using Accordion
+            dbc.Accordion([
+                dbc.AccordionItem([
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Label(["Smoothing Alpha ", dbc.Button(html.I(className="fas fa-question-circle"), id="help-button-alpha", color="link", size="sm", style={"padding": "0", "marginLeft": "3px"})], style={"fontSize": "0.9rem"}),
+                            dbc.Input(id='alpha-input', type='number', value=0.5, step=0.1)
+                        ], width=12, id="field-alpha"),
+                    ]),
+                    
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Label(["AWNB Trees ", dbc.Button(html.I(className="fas fa-question-circle"), id="help-button-trees", color="link", size="sm", style={"padding": "0", "marginLeft": "3px"})], style={"fontSize": "0.9rem"}),
+                            dbc.Input(id='trees-input', type='number', value=10, min=1)
+                        ], width=12, id="field-trees", style={"display": "none"}),
+                    ], className="mt-3"),
+                    
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Label(["MANB Prior ", dbc.Button(html.I(className="fas fa-question-circle"), id="help-button-prior", color="link", size="sm", style={"padding": "0", "marginLeft": "3px"})], style={"fontSize": "0.9rem"}),
+                            dbc.Input(id='prior-input', type='number', value=0.5, step=0.1)
+                        ], width=12, id="field-prior", style={"display": "none"}),
+                    ], className="mt-3"),
+                ], title="Estimation Options", item_id="param-options")
+            ], id="param-options-accordion", start_collapsed=True, className="mb-3"),
+            
+        ], width=6),
+    ], className="mb-4"),
     
-    html.H5("Training Options", className="mt-4"),
-    html.Div(id="training-restrictions-alert"),
+    # === TRAINING BUTTONS - MORE COMPACT ===
+    html.Hr(),
+    html.Div(id="training-restrictions-alert", className="mb-3"),
     dbc.Row([
         dbc.Col([
-            dbc.Button([html.I(className="fas fa-play-circle me-2"), "Train Both (Structure + Parameters)"], 
-                       id="btn-train-both", color="success", size="lg", className="w-100", disabled=False)
-        ], width=6),
+            dbc.Button([html.I(className="fas fa-play-circle me-2"), "Train Both"], 
+                       id="btn-train-both", color="success", size="lg", className="w-100")
+        ], width=4),
         dbc.Col([
-            dbc.ButtonGroup([
-                dbc.Button("Structure Only", id="btn-train-structure", color="primary", outline=True, disabled=False),
-                dbc.Button("Parameters Only", id="btn-learn-params", color="primary", outline=True, disabled=True)
-            ], className="w-100")
-        ], width=6)
+            dbc.Button([html.I(className="fas fa-project-diagram me-2"), "Structure Only"], 
+                       id="btn-train-structure", color="primary", outline=True, className="w-100")
+        ], width=4),
+        dbc.Col([
+            dbc.Button([html.I(className="fas fa-sliders-h me-2"), "Parameters Only"], 
+                       id="btn-learn-params", color="primary", outline=True, className="w-100", disabled=True)
+        ], width=4)
     ])
 ])
 
@@ -1081,6 +1027,35 @@ def update_eval_fields(val):
     if val == 'CV': return {'display': 'block'}, {'display': 'block'}
     return {'display': 'none'}, {'display': 'none'}
 
+# 3b. Auto-expand/collapse Accordions based on parameter requirements
+@app.callback(
+    Output('structure-params-accordion', 'active_item'),
+    Input('structure-method', 'value')
+)
+def control_structure_accordion(method):
+    """Automatically open accordion if the selected algorithm needs parameters"""
+    # Algorithms that need parameters
+    needs_params = ['TAN_CL', 'TAN_HC', 'KDB', 'FSSJ', 'BSEJ']
+    
+    if method in needs_params:
+        return "struct-params"  # Open the accordion item
+    else:
+        return None  # Close the accordion
+
+@app.callback(
+    Output('param-options-accordion', 'active_item'),
+    Input('param-method', 'value')
+)
+def control_param_accordion(method):
+    """Automatically open accordion if the selected parameter method needs options"""
+    # Methods that need options
+    needs_options = ['Bayes', 'AWNB', 'MANB']
+    
+    if method in needs_options:
+        return "param-options"  # Open the accordion item
+    else:
+        return None  # Close the accordion
+
 
 # 4. MAIN EXECUTION CALLBACK (Handling Button Clicks)
 @app.callback(
@@ -1156,7 +1131,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             elif struct_method == 'BSEJ':    
                 model = bnclassify.bsej(class_var, df, k=s_folds, epsilon=eps, smooth=0)
             else: 
-                return dbc.Alert("Unknown Algorithm", color="danger"), dash.no_update, dash.no_update, dash.no_update
+                return dbc.Alert("Unknown Algorithm", color="danger"), None, None, dash.no_update
             
             current_model = model
             current_structure_algorithm = struct_method
@@ -1224,13 +1199,13 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                         "Model is fully trained and ready! Go to 'Evaluation' to assess performance, 'Prediction' to classify new data, or 'Inspect Model' to examine the learned network."
                     ], className="mb-0 small")
                 ], color="success")
-            ]), dash.no_update, dash.no_update, dash.no_update
+            ]), None, None, dash.no_update
             
         except Exception as e:
             return dbc.Alert([
                 html.H5([html.I(className="fas fa-times-circle me-2"), "Training Failed"], className="alert-heading"),
                 html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
-            ], color="danger"), dash.no_update, dash.no_update, dash.no_update
+            ], color="danger"), None, None, dash.no_update
     
     # --- TRAIN STRUCTURE ---
     if trigger == 'btn-train-structure':
@@ -1279,16 +1254,16 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                         "Go to 'Parameter Learning' to estimate the conditional probability tables (CPTs), or go to 'Inspect Model' to see the structure."
                     ], className="mb-0 small")
                 ], color="success")
-            ]), dash.no_update, dash.no_update, dash.no_update
+            ]), None, None, dash.no_update
         except Exception as e:
              return dbc.Alert([
                  html.H5([html.I(className="fas fa-times-circle me-2"), f"Structure Learning Failed: {struct_method}"], className="alert-heading"),
                  html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
-             ], color="danger"), dash.no_update, dash.no_update, dash.no_update
+             ], color="danger"), None, None, dash.no_update
 
     if trigger == 'btn-learn-params':
         if current_model is None: 
-            return dbc.Alert("⚠ No structure! Learn structure first.", color="warning"), dash.no_update, dash.no_update, dash.no_update
+            return dbc.Alert("⚠ No structure! Learn structure first.", color="warning"), None, None, dash.no_update
         
         if param_method == 'MANB' and current_structure_algorithm != 'NB':
             return dbc.Alert([
@@ -1296,7 +1271,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                 html.Strong("MANB Restriction: "),
                 f"MANB can only be applied to Naive Bayes structures. Current structure: {current_structure_algorithm}. ",
                 "Please use a different parameter learning method or re-train with Naive Bayes structure."
-            ], color="danger"), dash.no_update, dash.no_update, dash.no_update
+            ], color="danger"), None, None, dash.no_update
         
         try:
             if   param_method == 'MLE':    
@@ -1349,12 +1324,12 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                         "Model is ready! Go to 'Evaluation' to assess performance, 'Prediction' to classify new data, or 'Inspect Model' to examine the learned network."
                     ], className="mb-0 small")
                 ], color="success")
-            ]), dash.no_update, dash.no_update, dash.no_update
+            ]), None, None, dash.no_update
         except Exception as e:
             return dbc.Alert([
                 html.H5([html.I(className="fas fa-times-circle me-2"), f"Parameter Learning Failed: {param_method}"], className="alert-heading"),
                 html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
-            ], color="danger"), dash.no_update, dash.no_update, dash.no_update
+            ], color="danger"), None, None, dash.no_update
             
     if trigger == 'btn-evaluate':
         if current_model is None: return dash.no_update, dbc.Alert("Model not ready for evaluation.", color="warning"), dash.no_update, dash.no_update
