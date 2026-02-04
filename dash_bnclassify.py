@@ -52,7 +52,7 @@ SIDEBAR_STYLE = {
 CONTENT_STYLE = {
     "marginLeft": "18.5rem",
     "marginRight": "2rem",
-    "padding": "2rem 1rem",
+    "padding": "1.5rem 1rem",
 }
 
 # Cytoscape stylesheet - CIG Corporate Style (from MBC)
@@ -114,8 +114,8 @@ sidebar = html.Div(
                 dbc.NavLink([html.I(className="fas fa-database me-2"), "Data & Connect"], href="#", id="nav-data", active=True),
                 dbc.NavLink([html.I(className="fas fa-cogs me-2"), "Structure & Parameters"], href="#", id="nav-structure"),
                 dbc.NavLink([html.I(className="fas fa-check-circle me-2"), "Evaluation"], href="#", id="nav-eval"),
-                dbc.NavLink([html.I(className="fas fa-magic me-2"), "Prediction"], href="#", id="nav-predict"),
                 dbc.NavLink([html.I(className="fas fa-search me-2"), "Inspect Model"], href="#", id="nav-inspect"),
+                dbc.NavLink([html.I(className="fas fa-magic me-2"), "Prediction"], href="#", id="nav-predict"),
             ],
             vertical=True,
             pills=True,
@@ -172,11 +172,10 @@ data_section = html.Div(id="section-data", children=[
             ], className="fw-bold"),
             dcc.Dropdown(id='class-dropdown', placeholder="Select class column", clearable=False, style={'position': 'relative', 'zIndex': '9999'}),
         ]),
-        style={"zIndex": 1002, "position": "relative"}
+        style={"zIndex": 1002, "position": "relative", "marginBottom": "1rem"}
     ),
 
-    html.Br(),
-    html.H5("Preview"),
+    html.H5("Preview", className="mt-3"),
     html.Div(id='data-preview')
 ])
 
@@ -219,8 +218,7 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
                 clearable=False
             ),
         ], width=6),
-    ]),
-    html.Br(),
+    ], className="mb-3"),
     
     # Structure Algorithm Parameters Card
     dbc.Card([
@@ -309,12 +307,8 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
         ])
     ]),
     
-    html.Br(),
-    html.Hr(),
-    
-    # === PARAMETER LEARNING SECTION ===
-    html.H4([html.I(className="fas fa-sliders-h me-2"), "Parameter Learning"]),
-    html.Div(id="current-params-info", className="alert alert-info"),
+    html.H4([html.I(className="fas fa-sliders-h me-2"), "Parameter Learning"], className="mt-4"),
+    html.Div(id="current-params-info", className="alert alert-info mb-3"),
     
     dbc.Row([
         dbc.Col([
@@ -389,13 +383,8 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
         ])
     ]),
     
-    html.Br(),
-    html.Hr(),
-    
-    # === TRAINING BUTTONS ===
-    html.H5("Training Options"),
-    html.Div(id="training-restrictions-alert"),  # Dynamic alert for restrictions
-    html.Br(),
+    html.H5("Training Options", className="mt-4"),
+    html.Div(id="training-restrictions-alert"),
     dbc.Row([
         dbc.Col([
             dbc.Button([html.I(className="fas fa-play-circle me-2"), "Train Both (Structure + Parameters)"], 
@@ -408,6 +397,17 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
             ], className="w-100")
         ], width=6)
     ])
+])
+
+# Section-specific output area
+structure_section.children.extend([
+    html.Hr(),
+    dbc.Card(dbc.CardBody([
+        html.H5("Output", className="card-title"),
+        dcc.Loading(id='loading-structure', type='circle', children=[
+            html.Div(id='structure-output')
+        ])
+    ]), className="mt-3 bg-light")
 ])
 
 # --- 3. PARAMS SECTION (REMOVED - NOW COMBINED ABOVE) ---
@@ -471,10 +471,20 @@ eval_section = html.Div(id="section-eval", style={"display": "none"}, children=[
                 value=['fixed'], id='dag-check', switch=True
             )
         ], width=5, id='field-dag-check')
-    ]),
+    ], className="mb-3"),
     
-    html.Br(),
-    dbc.Button("Evaluate Model", id="btn-evaluate", color="info", size="lg")
+    dbc.Button("Evaluate Model", id="btn-evaluate", color="info", size="lg", className="mt-3")
+])
+
+# Section-specific output area
+eval_section.children.extend([
+    html.Hr(),
+    dbc.Card(dbc.CardBody([
+        html.H5("Output", className="card-title"),
+        dcc.Loading(id='loading-eval', type='circle', children=[
+            html.Div(id='eval-output')
+        ])
+    ]), className="mt-3 bg-light")
 ])
 
 # --- 5. PREDICTION SECTION ---
@@ -506,15 +516,22 @@ predict_section = html.Div(id="section-predict", style={"display": "none"}, chil
         "How Prediction Works: Upload a CSV file (or load default) containing features. ",
         "The model predicts the class for each row (batch prediction). ",
         "Note: Unlike single-case prediction where you select values, this tool processes entire datasets for validation."
-    ], color="light", className="small mt-2"),
-    html.Br(),
-    dbc.Checkbox(id='prob-check', label=" Output Posterior Probabilities", value=False),
-    html.Br(),
+    ], color="light", className="small mb-3"),
+    dbc.Checkbox(id='prob-check', label=" Output Posterior Probabilities", value=False, className="mb-3"),
     dbc.Button("Run Prediction", id="btn-predict", color="success", size="lg", className="me-2"),
-    dbc.Button([html.I(className="fas fa-download me-2"), "Download Results"], id="btn-download-pred", color="secondary", size="lg", disabled=True),
-    
-    html.Br(), html.Br(),
+    dbc.Button([html.I(className="fas fa-download me-2"), "Download Results"], id="btn-download-pred", color="secondary", size="lg", disabled=True, className="mb-3"),
     html.Div(id="prediction-results")
+])
+
+# Section-specific output area for predictions display
+predict_section.children.extend([
+    html.Hr(),
+    dbc.Card(dbc.CardBody([
+        html.H5("Output", className="card-title"),
+        dcc.Loading(id='loading-predict', type='circle', children=[
+            html.Div(id='predict-output')
+        ])
+    ]), className="mt-3 bg-light")
 ])
 
 # --- 6. INSPECT SECTION ---
@@ -543,17 +560,8 @@ content = html.Div(id="page-content", style=CONTENT_STYLE, children=[
     structure_section,
     params_section,
     eval_section,
-    predict_section,
     inspect_section,
-    
-    html.Hr(),
-    # Global Output Area for status messages/results
-    dbc.Card(dbc.CardBody([
-        html.H4("Output / Logs", className="card-title"),
-        dcc.Loading(id='loading-output', type='circle', children=[
-            html.Div(id='output-area')
-        ])
-    ]), className="mt-4 bg-light")
+    predict_section,
 ])
 
 app.layout = html.Div([
@@ -561,6 +569,10 @@ app.layout = html.Div([
     dcc.Store(id='prediction-results-store'),
     dcc.Store(id='active-section-store', data='data'),
     dcc.Store(id='model-state-store'),  # Store model state
+    dcc.Store(id='structure-output-store'),  # Section-specific outputs
+    dcc.Store(id='evaluation-output-store'),
+    dcc.Store(id='prediction-output-store'),
+    dcc.Store(id='inspect-output-store'),
     dcc.Download(id="download-predictions"),
     dcc.Download(id="download-cpts"),
     dcc.Interval(id='interval-component', interval=2000, n_intervals=0),  # Update every 2 seconds
@@ -914,26 +926,25 @@ app.layout = html.Div([
 #                                CALLBACKS
 # =============================================================================
 
-# 1. Navigation Callback: Toggle Sections
 @app.callback(
     [Output("section-data", "style"),
      Output("section-structure", "style"),
      Output("section-params", "style"),
      Output("section-eval", "style"),
-     Output("section-predict", "style"),
      Output("section-inspect", "style"),
+     Output("section-predict", "style"),
      Output("nav-data", "active"),
      Output("nav-structure", "active"),
      Output("nav-eval", "active"),
-     Output("nav-predict", "active"),
-     Output("nav-inspect", "active")],
+     Output("nav-inspect", "active"),
+     Output("nav-predict", "active")],
     [Input("nav-data", "n_clicks"),
      Input("nav-structure", "n_clicks"),
      Input("nav-eval", "n_clicks"),
-     Input("nav-predict", "n_clicks"),
-     Input("nav-inspect", "n_clicks")],
+     Input("nav-inspect", "n_clicks"),
+     Input("nav-predict", "n_clicks")],
 )
-def navigate(n_data, n_struc, n_eval, n_pred, n_insp):
+def navigate(n_data, n_struc, n_eval, n_insp, n_pred):
     ctx = callback_context
     button_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else 'nav-data'
     
@@ -949,9 +960,9 @@ def navigate(n_data, n_struc, n_eval, n_pred, n_insp):
         styles[1] = show; actives[1] = True
     elif button_id == "nav-eval":
         styles[3] = show; actives[2] = True
-    elif button_id == "nav-predict":
-        styles[4] = show; actives[3] = True
     elif button_id == "nav-inspect":
+        styles[4] = show; actives[3] = True
+    elif button_id == "nav-predict":
         styles[5] = show; actives[4] = True
     else: # Default or nav-data
         styles[0] = show; actives[0] = True
@@ -1073,7 +1084,9 @@ def update_eval_fields(val):
 
 # 4. MAIN EXECUTION CALLBACK (Handling Button Clicks)
 @app.callback(
-    [Output('output-area', 'children'),
+    [Output('structure-output', 'children', allow_duplicate=True),
+     Output('eval-output', 'children', allow_duplicate=True),
+     Output('predict-output', 'children', allow_duplicate=True),
      Output('prediction-results-store', 'data')],
     [Input('btn-train-structure', 'n_clicks'),
      Input('btn-learn-params', 'n_clicks'),
@@ -1091,7 +1104,8 @@ def update_eval_fields(val):
      State('eval-metric', 'value'), State('eval-folds-input', 'value'), State('dag-check', 'value'),
      # Predict params
      State('upload-predict', 'contents'), State('prob-check', 'value'),
-     State('use-default-predict', 'value')]
+     State('use-default-predict', 'value')],
+    prevent_initial_call=True
 )
 def execute_action(n_struc, n_param, n_both, n_eval, n_pred, 
                   df_json, class_var,
@@ -1101,10 +1115,10 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                   pred_contents, prob_check, use_default_predict):
     
     ctx = callback_context
-    if not ctx.triggered: return "", dash.no_update
+    if not ctx.triggered: return dash.no_update, dash.no_update, dash.no_update, dash.no_update
     trigger = ctx.triggered[0]['prop_id'].split('.')[0]
     
-    if not df_json: return dbc.Alert("No dataset loaded!", color="warning"), dash.no_update
+    if not df_json: return dbc.Alert("No dataset loaded!", color="warning"), dash.no_update, dash.no_update, dash.no_update
     
     global current_model, current_structure_algorithm, current_params_learned
     df = pd.read_json(df_json, orient='split')
@@ -1123,7 +1137,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                     html.Li("Change structure algorithm to 'Naive Bayes (NB)', or"),
                     html.Li("Change parameter method to MLE, Bayes, WANBIA, or AWNB")
                 ])
-            ], color="danger"), dash.no_update
+            ], color="danger"), dash.no_update, dash.no_update, dash.no_update
         
         try:
             # First: Train Structure
@@ -1142,7 +1156,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             elif struct_method == 'BSEJ':    
                 model = bnclassify.bsej(class_var, df, k=s_folds, epsilon=eps, smooth=0)
             else: 
-                return dbc.Alert("Unknown Algorithm", color="danger"), dash.no_update
+                return dbc.Alert("Unknown Algorithm", color="danger"), dash.no_update, dash.no_update, dash.no_update
             
             current_model = model
             current_structure_algorithm = struct_method
@@ -1210,13 +1224,13 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                         "Model is fully trained and ready! Go to 'Evaluation' to assess performance, 'Prediction' to classify new data, or 'Inspect Model' to examine the learned network."
                     ], className="mb-0 small")
                 ], color="success")
-            ]), dash.no_update
+            ]), dash.no_update, dash.no_update, dash.no_update
             
         except Exception as e:
             return dbc.Alert([
                 html.H5([html.I(className="fas fa-times-circle me-2"), "Training Failed"], className="alert-heading"),
                 html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
-            ], color="danger"), dash.no_update
+            ], color="danger"), dash.no_update, dash.no_update, dash.no_update
     
     # --- TRAIN STRUCTURE ---
     if trigger == 'btn-train-structure':
@@ -1236,7 +1250,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             elif struct_method == 'BSEJ':    
                 model = bnclassify.bsej(class_var, df, k=s_folds, epsilon=eps, smooth=0)
             else: 
-                return dbc.Alert("Unknown Algorithm", color="danger"), dash.no_update
+                return dbc.Alert("Unknown Algorithm", color="danger"), dash.no_update, dash.no_update, dash.no_update
             
             current_model = model
             current_structure_algorithm = struct_method
@@ -1265,26 +1279,24 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                         "Go to 'Parameter Learning' to estimate the conditional probability tables (CPTs), or go to 'Inspect Model' to see the structure."
                     ], className="mb-0 small")
                 ], color="success")
-            ]), dash.no_update # No prediction data for training
+            ]), dash.no_update, dash.no_update, dash.no_update
         except Exception as e:
              return dbc.Alert([
                  html.H5([html.I(className="fas fa-times-circle me-2"), f"Structure Learning Failed: {struct_method}"], className="alert-heading"),
                  html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
-             ], color="danger"), dash.no_update
+             ], color="danger"), dash.no_update, dash.no_update, dash.no_update
 
-    # --- LEARN PARAMETERS ---
     if trigger == 'btn-learn-params':
         if current_model is None: 
-            return dbc.Alert("⚠ No structure! Learn structure first.", color="warning"), dash.no_update
+            return dbc.Alert("⚠ No structure! Learn structure first.", color="warning"), dash.no_update, dash.no_update, dash.no_update
         
-        # Validate MANB restriction: only works with Naive Bayes structures
         if param_method == 'MANB' and current_structure_algorithm != 'NB':
             return dbc.Alert([
                 html.I(className="fas fa-exclamation-triangle me-2"),
                 html.Strong("MANB Restriction: "),
                 f"MANB can only be applied to Naive Bayes structures. Current structure: {current_structure_algorithm}. ",
                 "Please use a different parameter learning method or re-train with Naive Bayes structure."
-            ], color="danger"), dash.no_update
+            ], color="danger"), dash.no_update, dash.no_update, dash.no_update
         
         try:
             if   param_method == 'MLE':    
@@ -1337,44 +1349,42 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                         "Model is ready! Go to 'Evaluation' to assess performance, 'Prediction' to classify new data, or 'Inspect Model' to examine the learned network."
                     ], className="mb-0 small")
                 ], color="success")
-            ])
+            ]), dash.no_update, dash.no_update, dash.no_update
         except Exception as e:
             return dbc.Alert([
                 html.H5([html.I(className="fas fa-times-circle me-2"), f"Parameter Learning Failed: {param_method}"], className="alert-heading"),
                 html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
-            ], color="danger"), dash.no_update
+            ], color="danger"), dash.no_update, dash.no_update, dash.no_update
             
-    # --- EVALUATE ---
     if trigger == 'btn-evaluate':
-        if current_model is None: return dbc.Alert("Model not ready for evaluation.", color="warning"), dash.no_update
+        if current_model is None: return dash.no_update, dbc.Alert("Model not ready for evaluation.", color="warning"), dash.no_update, dash.no_update
         try:
-            if eval_metric == 'CV':
+            if eval_metric ==  'CV':
                 fixed = ('fixed' in dag_check)
                 val = bnclassify.cv(current_model, df, k=eval_folds, dag=fixed)
-                return dbc.Alert(f"Cross-Validation Accuracy ({eval_folds} folds): {val:.4f}", color="info"), dash.no_update
+                return dash.no_update, dbc.Alert(f"Cross-Validation Accuracy ({eval_folds} folds): {val:.4f}", color="info"), dash.no_update, dash.no_update
             
             elif eval_metric == 'AIC':
                 # Wrapper already handles conversion to float
                 aic_val = bnclassify.aic(current_model, df)
-                return dbc.Alert(f"AIC Score: {aic_val:.4f}", color="info"), dash.no_update
+                return dash.no_update, dbc.Alert(f"AIC Score: {aic_val:.4f}", color="info"), dash.no_update, dash.no_update
             
             elif eval_metric == 'BIC':
                 # Wrapper already handles conversion to float
                 bic_val = bnclassify.bic(current_model, df)
-                return dbc.Alert(f"BIC Score: {bic_val:.4f}", color="info"), dash.no_update
+                return dash.no_update, dbc.Alert(f"BIC Score: {bic_val:.4f}", color="info"), dash.no_update, dash.no_update
             
             elif eval_metric == 'LL':
                 # Wrapper already handles conversion to float
                 ll_val = bnclassify.log_lik(current_model, df)
-                return dbc.Alert(f"Log-Likelihood: {ll_val:.4f}", color="info"), dash.no_update
+                return dash.no_update, dbc.Alert(f"Log-Likelihood: {ll_val:.4f}", color="info"), dash.no_update, dash.no_update
             
         except Exception as e:
-            return dbc.Alert(f"Evaluation Failed: {e}", color="danger"), dash.no_update
+            return dash.no_update, dbc.Alert(f"Evaluation Failed: {e}", color="danger"), dash.no_update, dash.no_update
 
 
-    # --- PREDICT ---
     if trigger == 'btn-predict':
-        if current_model is None: return dbc.Alert("No model trained!", color="warning"), dash.no_update
+        if current_model is None: return dash.no_update, dash.no_update, dbc.Alert("No model trained!", color="warning"), dash.no_update
         
         try:
             test_df = None
@@ -1391,7 +1401,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
                 test_df = pd.read_csv(StringIO(base64.b64decode(content_string).decode('utf-8')))
                 msg_src = "uploaded file"
             else:
-                 return dbc.Alert("Please upload data or select default test data.", color="warning"), dash.no_update
+                 return dash.no_update, dash.no_update, dbc.Alert("Please upload data or select default test data.", color="warning"), dash.no_update
             
             X = test_df.drop(columns=[class_var], errors='ignore')
             probs = prob_check
@@ -1400,37 +1410,45 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             preds = bnclassify.predict(current_model, X, prob=probs)
             
             # Result display
+            # Result display
+            # Prepare input features for display
+            X_display = X.reset_index(drop=True)
+            
             if probs:
-                # preds is a DataFrame of probabilities
+                # preds is a DataFrame of probabilities (now with correct columns from wrapper)
                 res_df = preds.round(4)
-                # Ensure we have an ID column
-                res_df.reset_index(inplace=True)
-                res_df.rename(columns={'index': 'Row ID'}, inplace=True)
+                # Combine Input Features + Probabilities
+                final_df = pd.concat([X_display, res_df], axis=1)
                 msg = "Posterior probabilities calculated."
             else:
                 # preds is a numpy array of classes
-                # Check if it's an array of indices or labels
-                # If they are indices, we might want to map them if we knew the levels.
-                # But bnclassify generally returns factors (labels).
-                res_df = pd.DataFrame({'Row ID': range(len(preds)), 'Predicted Class': preds})
+                pred_df = pd.DataFrame({'Predicted Class': preds})
+                # Combine Input Features + Prediction
+                final_df = pd.concat([X_display, pred_df], axis=1)
                 msg = "Class labels predicted."
             
-            return html.Div([
+            # Add Row ID
+            final_df.insert(0, 'Row ID', final_df.index)
+            res_df = final_df
+            
+            return dash.no_update, dash.no_update, html.Div([
                 dbc.Alert(msg, color="success"),
                 dash_table.DataTable(
-                    data=res_df.head(10).to_dict('records'), 
+                    data=res_df.to_dict('records'), 
                     columns=[{'name': str(c), 'id': str(c)} for c in res_df.columns],
                     page_size=10,
                     style_table={'overflowX': 'auto'},
                     style_header={'fontWeight': 'bold', 'backgroundColor': '#f8f9fa'},
-                    style_cell={'textAlign': 'center'}
+                    style_cell={'textAlign': 'center'},
+                    sort_action="native",
+                    filter_action="native"
                 )
             ]), res_df.to_json(orient='split', date_format='iso')
             
         except Exception as e:
-            return dbc.Alert(f"Prediction Failed: {e}", color="danger"), dash.no_update
+            return dash.no_update, dash.no_update, dbc.Alert(f"Prediction Failed: {e}", color="danger"), dash.no_update
             
-    return dash.no_update, dash.no_update
+    return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
 # 5. INSPECTION CALLBACK
@@ -1705,7 +1723,9 @@ def update_training_restrictions(n, param_method, struct_method):
 # 7. RESET CALLBACK
 @app.callback(
     [Output('dataset-store', 'data', allow_duplicate=True),
-     Output('output-area', 'children', allow_duplicate=True)],
+     Output('structure-output', 'children', allow_duplicate=True),
+     Output('eval-output', 'children', allow_duplicate=True),
+     Output('predict-output', 'children', allow_duplicate=True)],
     Input('reset-button', 'n_clicks'),
     prevent_initial_call=True
 )
@@ -1715,8 +1735,21 @@ def reset_application(n_clicks):
         current_model = None
         current_structure_algorithm = None
         current_params_learned = False
-        return None, dbc.Alert("Application reset successfully!", color="success")
-    return dash.no_update, dash.no_update
+        msg = dbc.Alert("Application reset successfully!", color="success")
+        return None, msg, "", ""
+    return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+# 7b. AUTO-CLEAR OUTPUTS ON DATASET CHANGE
+@app.callback(
+    [Output('structure-output', 'children', allow_duplicate=True),
+     Output('eval-output', 'children', allow_duplicate=True),
+     Output('predict-output', 'children', allow_duplicate=True)],
+    Input('dataset-store', 'data'),
+    prevent_initial_call=True
+)
+def clear_outputs_on_dataset_change(data):
+    """Clear all section outputs when dataset changes"""
+    return "", "", ""
 
 # Popover callbacks
 @app.callback(
