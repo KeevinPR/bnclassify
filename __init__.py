@@ -191,9 +191,22 @@ def predict(model, df, prob=False):
     
     if prob:
         # Returns a matrix of probabilities
+        # Attempt to get column names (class labels)
+        r_cols = base.colnames(preds)
+        
         with localconverter(robjects.default_converter + pandas2ri.converter):
              py_preds = robjects.conversion.rpy2py(preds)
-        return pd.DataFrame(py_preds)
+        
+        df_out = pd.DataFrame(py_preds)
+        
+        try:
+             # Assign columns if available and length matches
+             if r_cols is not None and len(r_cols) == df_out.shape[1]:
+                 df_out.columns = list(r_cols)
+        except Exception:
+             pass
+             
+        return df_out
     else:
         # Returns a factor vector of classes
         with localconverter(robjects.default_converter + pandas2ri.converter):
