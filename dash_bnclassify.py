@@ -196,9 +196,73 @@ def help_icon(id):
 # --- 1. DATA SECTION ---
 # --- 1. DATA SECTION ---
 data_section = html.Div(id="section-data", children=[
+    ########################################################
+    # Links to Paper and GitHub repositories
+    ########################################################
+    html.Div(
+        className="link-bar",
+        style={
+            "textAlign": "center",
+            "marginBottom": "20px"
+        },
+        children=[
+            html.A(
+                children=[
+                    html.Img(
+                        src="https://cig.fi.upm.es/wp-content/uploads/2023/11/cropped-logo_CIG.png",
+                        style={"height": "24px", "marginRight": "8px"}
+                    ),
+                    "Proceeding Paper"
+                ],
+                href="https://cig.fi.upm.es/wp-content/uploads/2024/01/BOJAN_MIHALJEVIC-2.pdf",
+                target="_blank",
+                className="btn btn-outline-primary me-2"
+            ),
+            html.A(
+                children=[
+                    html.Img(
+                        src="https://cig.fi.upm.es/wp-content/uploads/github.png",
+                        style={"height": "24px", "marginRight": "8px"}
+                    ),
+                    "Original R Package GitHub"
+                ],
+                href="https://github.com/bmihaljevic/bnclassify",
+                target="_blank",
+                className="btn btn-outline-secondary me-2"
+            ),
+            html.A(
+                children=[
+                    html.Img(
+                        src="https://cig.fi.upm.es/wp-content/uploads/github.png",
+                        style={"height": "24px", "marginRight": "8px"}
+                    ),
+                    "Dash Adapted GitHub"
+                ],
+                href="https://github.com/KeevinPR/bnclassify",
+                target="_blank",
+                className="btn btn-outline-info me-2"
+            ),
+        ]
+    ),
+    ########################################################
+    # Short explanatory text
+    ########################################################
+    html.Div(
+        [
+            html.P(
+                "Bayesian Network Classifiers (BNC) are probabilistic graphical models that use Bayesian networks "
+                "for supervised classification. This app allows you to upload a dataset, learn different BNC structures "
+                "(Naive Bayes, TAN, KDB, etc.), train the model parameters, and evaluate classification performance. "
+                "The bnclassify package provides a comprehensive suite of algorithms for structure learning and inference.",
+                style={"textAlign": "center", "maxWidth": "800px", "margin": "0 auto"}
+            )
+        ],
+        style={"marginBottom": "20px"}
+    ),
+    
+    html.Hr(),
     html.H2("Data & Connectivity", style={"color": "#00A2E1", "textAlign": "center"}),
     html.P("Upload your dataset or use the default one to get started.", style={"textAlign": "center", "color": "#6c757d"}),
-    html.Hr(),
     
     dbc.Card(
         dbc.CardBody([
