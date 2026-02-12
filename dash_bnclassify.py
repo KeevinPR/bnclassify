@@ -27,6 +27,66 @@ app = dash.Dash(
     suppress_callback_exceptions=True
 )
 
+# Custom CSS for consistent color scheme (matching MPE/MBC dashboards)
+app.index_string = '''
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+        <style>
+            body {
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                min-height: 100vh;
+            }
+            .card {
+                background-color: rgba(255, 255, 255, 0.95);
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            h1, h2, h3, h4, h5, h6 {
+                color: #00A2E1;
+            }
+            .popover-header {
+                background-color: #f8f9fa !important;
+                color: #333 !important;
+                font-weight: bold !important;
+            }
+            .popover-body {
+                background-color: #ffffff !important;
+            }
+            .btn-primary {
+                background-color: #00A2E1 !important;
+                border-color: #0077A8 !important;
+            }
+            .btn-primary:hover {
+                background-color: #0077A8 !important;
+                border-color: #005580 !important;
+            }
+            .btn-success {
+                background-color: #28a745 !important;
+                border-color: #218838 !important;
+            }
+            .btn-info {
+                background-color: #17a2b8 !important;
+                border-color: #138496 !important;
+            }
+        </style>
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+'''
+
 # Expose the server for Gunicorn
 server = app.server
 
@@ -46,13 +106,16 @@ SIDEBAR_STYLE = {
     "bottom": 0,
     "width": "18rem",
     "padding": "2rem 1rem",
-    "backgroundColor": "#f8f9fa",
+    "backgroundColor": "rgba(255, 255, 255, 0.95)",
+    "borderRight": "2px solid #dee2e6",
+    "boxShadow": "2px 0 8px rgba(0, 0, 0, 0.1)",
 }
 
 CONTENT_STYLE = {
     "marginLeft": "18.5rem",
     "marginRight": "2rem",
     "padding": "1.5rem 1rem",
+    "minHeight": "100vh",
 }
 
 # Cytoscape stylesheet - CIG Corporate Style (from MBC)
@@ -104,10 +167,10 @@ cytoscape_stylesheet = [
 
 sidebar = html.Div(
     [
-        html.H3("bnclassify", className="display-6"),
+        html.H3("bnclassify", className="display-6", style={"color": "#00A2E1"}),
         html.Hr(),
         html.P(
-            "Bayesian Network Classifiers", className="lead", style={"fontSize": "1rem"}
+            "Bayesian Network Classifiers", className="lead", style={"fontSize": "1rem", "color": "#6c757d"}
         ),
         dbc.Nav(
             [
@@ -128,18 +191,18 @@ sidebar = html.Div(
 
 # Function to helper create icon for popover
 def help_icon(id):
-    return html.I(className="fas fa-question-circle ms-1 text-info", id=id, style={"cursor": "pointer"})
+    return html.I(className="fas fa-question-circle ms-1", id=id, style={"cursor": "pointer", "color": "#00A2E1"})
 
 # --- 1. DATA SECTION ---
 # --- 1. DATA SECTION ---
 data_section = html.Div(id="section-data", children=[
-    html.H2("Data & Connectivity"),
-    html.P("Upload your dataset or use the default one to get started."),
+    html.H2("Data & Connectivity", style={"color": "#00A2E1", "textAlign": "center"}),
+    html.P("Upload your dataset or use the default one to get started.", style={"textAlign": "center", "color": "#6c757d"}),
     html.Hr(),
     
     dbc.Card(
         dbc.CardBody([
-            html.H5("Upload Dataset (CSV)", className="card-title"),
+            html.H5("Upload Dataset (CSV)", className="card-title", style={"color": "#00A2E1"}),
             dcc.Upload(
                 id='upload-data',
                 children=html.Div([
@@ -175,16 +238,16 @@ data_section = html.Div(id="section-data", children=[
         style={"zIndex": 1002, "position": "relative", "marginBottom": "1rem"}
     ),
 
-    html.H5("Preview", className="mt-3"),
+    html.H5("Preview", className="mt-3", style={"color": "#00A2E1", "textAlign": "center"}),
     html.Div(id='data-preview')
 ])
 
 # --- 2. COMBINED STRUCTURE & PARAMETER LEARNING SECTION ---
 structure_section = html.Div(id="section-structure", style={"display": "none"}, children=[
-    html.H2("Structure & Parameter Learning"),
-    html.P("Configure both structure and parameters for your Bayesian Network Classifier."),
+    html.H2("Structure & Parameter Learning", style={"color": "#00A2E1", "textAlign": "center"}),
+    html.P("Configure both structure and parameters for your Bayesian Network Classifier.", style={"textAlign": "center", "color": "#6c757d"}),
     dbc.Alert([
-        html.I(className="fas fa-lightbulb me-2"),
+        html.I(className="fas fa-lightbulb me-2", style={"color": "#00A2E1"}),
         html.Strong("Scientific Note: "),
         "Structure and parameter learning are coexistent processes. Configure both and train together or separately."
     ], color="info", className="small"),
@@ -193,7 +256,7 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
     # === STRUCTURE LEARNING - COMPACT DESIGN ===
     dbc.Row([
         dbc.Col([
-            html.H5([html.I(className="fas fa-project-diagram me-2"), "Structure Learning"], className="mb-3"),
+            html.H5([html.I(className="fas fa-project-diagram me-2"), "Structure Learning"], className="mb-3", style={"color": "#00A2E1"}),
             html.Div([
                 dbc.Label([
                     "Algorithm Family", 
@@ -269,7 +332,7 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
         
         # === PARAMETER LEARNING - COMPACT DESIGN ===
         dbc.Col([
-            html.H5([html.I(className="fas fa-sliders-h me-2"), "Parameter Learning"], className="mb-3"),
+            html.H5([html.I(className="fas fa-sliders-h me-2"), "Parameter Learning"], className="mb-3", style={"color": "#00A2E1"}),
             html.Div(id="current-params-info", className="alert alert-info mb-3 py-2 px-3 small"),
             
             html.Div([
@@ -349,11 +412,11 @@ structure_section = html.Div(id="section-structure", style={"display": "none"}, 
 structure_section.children.extend([
     html.Hr(),
     dbc.Card(dbc.CardBody([
-        html.H5("Output", className="card-title"),
-        dcc.Loading(id='loading-structure', type='circle', children=[
+        html.H5("Output", className="card-title", style={"color": "#00A2E1"}),
+        dcc.Loading(id='loading-structure', type='circle', color="#00A2E1", children=[
             html.Div(id='structure-output')
         ])
-    ]), className="mt-3 bg-light")
+    ]), className="mt-3", style={"backgroundColor": "#f8f9fa", "border": "1px solid #dee2e6"})
 ])
 
 # --- 3. PARAMS SECTION (REMOVED - NOW COMBINED ABOVE) ---
@@ -361,7 +424,7 @@ params_section = html.Div(id="section-params", style={"display": "none"}, childr
 
 # --- 4. EVALUATION SECTION ---
 eval_section = html.Div(id="section-eval", style={"display": "none"}, children=[
-    html.H2("Model Evaluation"),
+    html.H2("Model Evaluation", style={"color": "#00A2E1", "textAlign": "center"}),
     html.Hr(),
     
     dbc.Row([
@@ -426,17 +489,17 @@ eval_section = html.Div(id="section-eval", style={"display": "none"}, children=[
 eval_section.children.extend([
     html.Hr(),
     dbc.Card(dbc.CardBody([
-        html.H5("Output", className="card-title"),
-        dcc.Loading(id='loading-eval', type='circle', children=[
+        html.H5("Output", className="card-title", style={"color": "#00A2E1"}),
+        dcc.Loading(id='loading-eval', type='circle', color="#00A2E1", children=[
             html.Div(id='eval-output')
         ])
-    ]), className="mt-3 bg-light")
+    ]), className="mt-3", style={"backgroundColor": "#f8f9fa", "border": "1px solid #dee2e6"})
 ])
 
 # --- 5. PREDICTION SECTION ---
 predict_section = html.Div(id="section-predict", style={"display": "none"}, children=[
-    html.H2("Prediction"),
-    html.P("Predict classes for new data using the trained model."),
+    html.H2("Prediction", style={"color": "#00A2E1", "textAlign": "center"}),
+    html.P("Predict classes for new data using the trained model.", style={"textAlign": "center", "color": "#6c757d"}),
     html.Hr(),
     
     dbc.Label("Upload Unlabeled Data (CSV)"),
@@ -458,7 +521,7 @@ predict_section = html.Div(id="section-predict", style={"display": "none"}, chil
     ),
     
     dbc.Alert([
-        html.I(className="fas fa-info-circle me-2"),
+        html.I(className="fas fa-info-circle me-2", style={"color": "#00A2E1"}),
         "How Prediction Works: Upload a CSV file (or load default) containing features. ",
         "The model predicts the class for each row (batch prediction). ",
         "Note: Unlike single-case prediction where you select values, this tool processes entire datasets for validation."
@@ -473,16 +536,16 @@ predict_section = html.Div(id="section-predict", style={"display": "none"}, chil
 predict_section.children.extend([
     html.Hr(),
     dbc.Card(dbc.CardBody([
-        html.H5("Output", className="card-title"),
-        dcc.Loading(id='loading-predict', type='circle', children=[
+        html.H5("Output", className="card-title", style={"color": "#00A2E1"}),
+        dcc.Loading(id='loading-predict', type='circle', color="#00A2E1", children=[
             html.Div(id='predict-output')
         ])
-    ]), className="mt-3 bg-light")
+    ]), className="mt-3", style={"backgroundColor": "#f8f9fa", "border": "1px solid #dee2e6"})
 ])
 
 # --- 6. INSPECT SECTION ---
 inspect_section = html.Div(id="section-inspect", style={"display": "none"}, children=[
-    html.H2("Inspect Model"),
+    html.H2("Inspect Model", style={"color": "#00A2E1", "textAlign": "center"}),
     html.Hr(),
     
     dbc.Tabs([
@@ -546,9 +609,9 @@ app.layout = html.Div([
             dbc.PopoverHeader(
                 [
                     "Structure Learning Algorithms",
-                    html.I(className="fas fa-project-diagram ms-2", style={"color": "#0d6efd"})
+                    html.I(className="fas fa-project-diagram ms-2", style={"color": "#00A2E1"})
                 ],
-                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}
+                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold", "color": "#333"}
             ),
             dbc.PopoverBody(
                 [
@@ -578,9 +641,9 @@ app.layout = html.Div([
             dbc.PopoverHeader(
                 [
                     "Parameter Learning Methods",
-                    html.I(className="fas fa-sliders-h ms-2", style={"color": "#0d6efd"})
+                    html.I(className="fas fa-sliders-h ms-2", style={"color": "#00A2E1"})
                 ],
-                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}
+                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold", "color": "#333"}
             ),
             dbc.PopoverBody(
                 [
@@ -799,9 +862,9 @@ app.layout = html.Div([
             dbc.PopoverHeader(
                 [
                     "Evaluation Metrics",
-                    html.I(className="fas fa-chart-line ms-2", style={"color": "#0d6efd"})
+                    html.I(className="fas fa-chart-line ms-2", style={"color": "#00A2E1"})
                 ],
-                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}
+                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold", "color": "#333"}
             ),
             dbc.PopoverBody([
                 html.P("Choose a metric to assess your model's performance:"),
@@ -1103,7 +1166,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
         # PRE-VALIDATION: Check MANB compatibility before starting
         if param_method == 'MANB' and struct_method != 'NB':
             return dbc.Alert([
-                html.I(className="fas fa-ban me-2"),
+                html.I(className="fas fa-ban me-2", style={"color": "#dc3545"}),
                 html.Strong("Cannot Train - Incompatible Configuration: "),
                 f"MANB parameters require Naive Bayes structure, but you selected '{struct_method}'. ",
                 html.Br(),
@@ -1182,13 +1245,13 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             
             return html.Div([
                 dbc.Alert([
-                    html.H4([html.I(className="fas fa-check-double me-2"), "Complete Model Trained Successfully!"], className="alert-heading mb-3"),
+                    html.H4([html.I(className="fas fa-check-double me-2", style={"color": "#28a745"}), "Complete Model Trained Successfully!"], className="alert-heading mb-3"),
                     
                     html.Div([
-                        html.H6([html.I(className="fas fa-project-diagram me-2"), "Structure"], className="mb-2"),
+                        html.H6([html.I(className="fas fa-project-diagram me-2", style={"color": "#00A2E1"}), "Structure"], className="mb-2", style={"color": "#00A2E1"}),
                         html.P([html.Strong(struct_method), " - ", struct_desc], className="mb-3 ms-3"),
                         
-                        html.H6([html.I(className="fas fa-sliders-h me-2"), "Parameters"], className="mb-2"),
+                        html.H6([html.I(className="fas fa-sliders-h me-2", style={"color": "#00A2E1"}), "Parameters"], className="mb-2", style={"color": "#00A2E1"}),
                         html.P([html.Strong(param_method), " - ", param_desc], className="mb-2 ms-3"),
                         extra_note if extra_note else "",
                     ]),
@@ -1203,7 +1266,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             
         except Exception as e:
             return dbc.Alert([
-                html.H5([html.I(className="fas fa-times-circle me-2"), "Training Failed"], className="alert-heading"),
+                html.H5([html.I(className="fas fa-times-circle me-2", style={"color": "#dc3545"}), "Training Failed"], className="alert-heading"),
                 html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
             ], color="danger"), None, None, dash.no_update
     
@@ -1246,7 +1309,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             
             return html.Div([
                 dbc.Alert([
-                    html.H5([html.I(className="fas fa-check-circle me-2"), f"Structure Learned: {struct_method}"], className="alert-heading mb-2"),
+                    html.H5([html.I(className="fas fa-check-circle me-2", style={"color": "#28a745"}), f"Structure Learned: {struct_method}"], className="alert-heading mb-2"),
                     html.P(description, className="mb-2"),
                     html.Hr(),
                     html.P([
@@ -1257,7 +1320,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             ]), None, None, dash.no_update
         except Exception as e:
              return dbc.Alert([
-                 html.H5([html.I(className="fas fa-times-circle me-2"), f"Structure Learning Failed: {struct_method}"], className="alert-heading"),
+                 html.H5([html.I(className="fas fa-times-circle me-2", style={"color": "#dc3545"}), f"Structure Learning Failed: {struct_method}"], className="alert-heading"),
                  html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
              ], color="danger"), None, None, dash.no_update
 
@@ -1267,7 +1330,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
         
         if param_method == 'MANB' and current_structure_algorithm != 'NB':
             return dbc.Alert([
-                html.I(className="fas fa-exclamation-triangle me-2"),
+                html.I(className="fas fa-exclamation-triangle me-2", style={"color": "#dc3545"}),
                 html.Strong("MANB Restriction: "),
                 f"MANB can only be applied to Naive Bayes structures. Current structure: {current_structure_algorithm}. ",
                 "Please use a different parameter learning method or re-train with Naive Bayes structure."
@@ -1312,7 +1375,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             
             return html.Div([
                 dbc.Alert([
-                    html.H5([html.I(className="fas fa-check-circle me-2"), f"Parameters Learned: {param_method}"], className="alert-heading mb-2"),
+                    html.H5([html.I(className="fas fa-check-circle me-2", style={"color": "#28a745"}), f"Parameters Learned: {param_method}"], className="alert-heading mb-2"),
                     html.P([
                         html.Strong("Structure: "), f"{current_structure_algorithm}", html.Br(),
                         html.Strong("Method: "), description
@@ -1327,7 +1390,7 @@ def execute_action(n_struc, n_param, n_both, n_eval, n_pred,
             ]), None, None, dash.no_update
         except Exception as e:
             return dbc.Alert([
-                html.H5([html.I(className="fas fa-times-circle me-2"), f"Parameter Learning Failed: {param_method}"], className="alert-heading"),
+                html.H5([html.I(className="fas fa-times-circle me-2", style={"color": "#dc3545"}), f"Parameter Learning Failed: {param_method}"], className="alert-heading"),
                 html.P(f"Error: {str(e)}", className="mb-0 font-monospace small")
             ], color="danger"), None, None, dash.no_update
             
@@ -1447,7 +1510,7 @@ def update_inspection(active_tab, n_nav):
             ms = bnclassify.modelstring(current_model)
             
             summary = html.Div([
-                html.H5("Model Summary"),
+                html.H5("Model Summary", style={"color": "#00A2E1", "textAlign": "center"}),
                 html.Ul([
                     html.Li([html.Strong("Class Variable: "), c_v]),
                     html.Li([html.Strong("Features (Nodes): "), ", ".join(feats)]),
@@ -1670,7 +1733,7 @@ def update_training_restrictions(n, param_method, struct_method):
     if has_structure and param_method == 'MANB' and current_structure_algorithm != 'NB':
         params_only_disabled = True
         alert = dbc.Alert([
-            html.I(className="fas fa-exclamation-triangle me-2"),
+            html.I(className="fas fa-exclamation-triangle me-2", style={"color": "#ffc107"}),
             html.Strong("Restriction: "),
             f"MANB parameters cannot be applied to current structure ({current_structure_algorithm}). ",
             "Select a different parameter method or retrain with Naive Bayes structure."
@@ -1680,7 +1743,7 @@ def update_training_restrictions(n, param_method, struct_method):
     elif param_method == 'MANB' and struct_method != 'NB':
         train_both_disabled = True
         alert = dbc.Alert([
-            html.I(className="fas fa-exclamation-triangle me-2"),
+            html.I(className="fas fa-exclamation-triangle me-2", style={"color": "#dc3545"}),
             html.Strong("Incompatible Selection: "),
             f"MANB parameters require Naive Bayes structure. Currently selected: {struct_method}. ",
             "Either change structure to 'Naive Bayes (NB)' or select a different parameter method."
@@ -1689,7 +1752,7 @@ def update_training_restrictions(n, param_method, struct_method):
     # If no structure, show info message
     elif not has_structure:
         alert = dbc.Alert([
-            html.I(className="fas fa-info-circle me-2"),
+            html.I(className="fas fa-info-circle me-2", style={"color": "#00A2E1"}),
             "No structure trained yet. Use 'Train Both' or 'Structure Only' to begin."
         ], color="info", className="mt-2")
     
