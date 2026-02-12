@@ -452,32 +452,34 @@ h1 {
 /* === BOTONES SUCCESS E INFO MÁS TENUES (Liquid Glass) === */
 .btn-outline-success,
 .btn-success {
-  border-color: rgba(40, 167, 69, 0.35) !important;
-  color: rgba(40, 167, 69, 0.9) !important;
-  background: rgba(40, 167, 69, 0.08) !important;
-  font-weight: 500 !important;
+  border-color: rgba(40, 167, 69, 0.5) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: rgba(40, 167, 69, 0.65) !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
 }
 
 .btn-outline-success:hover,
 .btn-success:hover {
-  border-color: rgba(40, 167, 69, 0.6) !important;
-  background: rgba(40, 167, 69, 0.15) !important;
-  color: rgba(40, 167, 69, 1) !important;
+  border-color: rgba(40, 167, 69, 0.7) !important;
+  background: rgba(40, 167, 69, 0.8) !important;
+  color: rgba(255, 255, 255, 1) !important;
 }
 
 .btn-outline-info,
 .btn-info {
-  border-color: rgba(23, 162, 184, 0.35) !important;
-  color: rgba(23, 162, 184, 0.9) !important;
-  background: rgba(23, 162, 184, 0.08) !important;
-  font-weight: 500 !important;
+  border-color: rgba(23, 162, 184, 0.5) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: rgba(23, 162, 184, 0.65) !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
 }
 
 .btn-outline-info:hover,
 .btn-info:hover {
-  border-color: rgba(23, 162, 184, 0.6) !important;
-  background: rgba(23, 162, 184, 0.15) !important;
-  color: rgba(23, 162, 184, 1) !important;
+  border-color: rgba(23, 162, 184, 0.7) !important;
+  background: rgba(23, 162, 184, 0.8) !important;
+  color: rgba(255, 255, 255, 1) !important;
 }
 
 /* === BOTONES DE ENLACES (para los links de papers) === */
